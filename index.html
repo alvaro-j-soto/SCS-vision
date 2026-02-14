@@ -56,6 +56,7 @@
       send: (p) => <Ic {...p} d={["M22 2L11 13","M22 2l-7 20-4-9-9-4 20-7z"]}/>,
       phone: (p) => <Ic {...p} d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.14.9.35 1.78.63 2.63a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.28 1.73.49 2.63.63A2 2 0 0 1 22 16.92z"/>,
       shield: (p) => <Ic {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+      upload: (p) => <Ic {...p} d={["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4","M17 8l-5-5-5 5","M12 3v12"]}/>,
       file: (p) => <Ic {...p} d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6","M16 13H8","M16 17H8","M10 9H8"]}/>,
       trending: (p) => <Ic {...p} d={["M23 6l-9.5 9.5-5-5L1 18","M17 6h6v6"]}/>,
       refresh: (p) => <Ic {...p} d={["M23 4v6h-6","M1 20v-6h6","M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"]}/>,
@@ -1113,6 +1114,475 @@
       );
     }
 
+    // ===== POLICY SETUP (HR Gina) =====
+    const PROCESSING_STEPS = [
+      { label:'Reading document structure...', detail:'Identified 3-page attendance policy with 13 sections', dur:1200 },
+      { label:'Extracting point value matrix...', detail:'Found 3-dimensional matrix: notification timing × absence duration × event type', dur:1800 },
+      { label:'Identifying threshold levels...', detail:'Detected 4 progressive discipline thresholds (3 / 6 / 9 / >9 points)', dur:1200 },
+      { label:'Determining expiration model...', detail:'Rolling 12-month from date incurred — each point has individual expiration', dur:1000 },
+      { label:'Parsing exclusion categories...', detail:'Found 10 approved absence types that do not accrue points', dur:1200 },
+      { label:'Detecting special rules...', detail:'Found: consecutive absence consolidation, 2-NCNS trigger, overtime tracking, mandatory meeting rules', dur:1500 },
+      { label:'Building configuration draft...', detail:'Mapping extracted data to configuration engine schema', dur:1000 }
+    ];
+
+    const REVIEW_SECTIONS = [
+      { id:'matrix', title:'Point Value Matrix', icon:Icons.barChart, confidence:'high',
+        description:'3-dimensional matrix based on notification timing, absence duration, and event type. Mid-shift calculated at halfway point of scheduled shift.',
+        data: {
+          headers:['', '≥30 min before shift', '<30 min before shift', 'After shift start'],
+          rows:[
+            ['Late arrival (<2 hrs)', '½ pt', '½ pt', '1 pt'],
+            ['Late arrival (2 hrs – mid-shift)', '1 pt', '1 pt', '2 pts'],
+            ['Late arrival (after mid-shift)', '6 pts', '6 pts', '6 pts'],
+            ['Call-off (before mid-shift)', '½–1 pt', '2 pts', '4 pts'],
+            ['Call-off (after mid-shift)', '1 pt', '—', '6 pts'],
+            ['No-Call/No-Show', '6 pts', '6 pts', '6 pts']
+          ]
+        }
+      },
+      { id:'thresholds', title:'Progressive Discipline Thresholds', icon:Icons.alert, confidence:'high',
+        description:'4-level progressive discipline model triggered at specific point accumulations.',
+        data: {
+          items:[
+            { points:'3 points', action:'Verbal Warning', signers:'Employee + Supervisor + Union Rep' },
+            { points:'6 points', action:'Written Warning', signers:'Employee + Supervisor + Union Rep' },
+            { points:'9 points', action:'3-Day Suspension', signers:'Employee + Supervisor + Union Rep' },
+            { points:'>9 points', action:'3-Day Suspension Pending Termination', signers:'Employee + Supervisor + Union Rep + HR' }
+          ]
+        }
+      },
+      { id:'expiration', title:'Point Expiration Model', icon:Icons.clock, confidence:'high',
+        description:'Rolling 12-month expiration from date each point was incurred.',
+        data: {
+          method:'Rolling 12-month',
+          detail:'Each point expires on its individual anniversary date. Example: point incurred May 1 drops off May 1 of the following year.',
+          window:'12 months'
+        }
+      },
+      { id:'exclusions', title:'Excluded Absence Types', icon:Icons.shield, confidence:'high',
+        description:'10 absence categories that do not accrue points under this policy.',
+        data: {
+          categories:[
+            { name:'Approved Vacation', owner:'System' },
+            { name:'Bereavement Leave', owner:'HR' },
+            { name:'Disciplinary Days Off', owner:'HR' },
+            { name:'Holidays', owner:'System' },
+            { name:'Jury Duty / Court Subpoenas', owner:'HR' },
+            { name:'Lack of Work (non-scheduled)', owner:'System' },
+            { name:'Military Duty Approved Leave', owner:'HR' },
+            { name:'Approved Leaves (CBA / Law)', owner:'HR' },
+            { name:'Scheduled Days Off', owner:'System' },
+            { name:'Workers Compensation', owner:'HR' }
+          ]
+        }
+      },
+      { id:'special', title:'Special Rules Detected', icon:Icons.star, confidence:'medium',
+        description:'Additional rules found in the policy that extend the base configuration. Review carefully.',
+        data: {
+          rules:[
+            { name:'Consecutive Absence Consolidation', detail:"Consecutive days = 1 point IF employee provides signed doctor's excuse. Otherwise each day counts separately.", enabled:true, flag:'Requires supervisor/HR input when documentation is received' },
+            { name:'2-NCNS Termination Trigger', detail:'Two No-Call/No-Shows in a rolling 12-month period results in suspension pending termination — independent of total points.', enabled:true, flag:null },
+            { name:'Overtime Absence Tracking', detail:'Scheduled/voluntary overtime absence: <2 hrs = ½ pt, ≥2 hrs = 1 pt.', enabled:true, flag:null },
+            { name:'Mandatory Meeting Points', detail:'Tardy/early departure from mandatory meeting = ½ pt. Complete miss = 1 pt.', enabled:false, flag:'Edge case — recommend manual entry for now' },
+            { name:'Leave Early Without Notice', detail:'Leaving plant without notification = suspension pending termination (job abandonment).', enabled:false, flag:'Process rule — not a point calculation. Informational only.' }
+          ]
+        }
+      }
+    ];
+
+    function PolicySetup() {
+      const [step, setStep] = useState('upload');
+      const [procStep, setProcStep] = useState(0);
+      const [procDone, setProcDone] = useState(false);
+      const [reviewIdx, setReviewIdx] = useState(0);
+      const [confirmed, setConfirmed] = useState({});
+      const [editing, setEditing] = useState(null);
+      const timeoutsRef = useRef([]);
+      const sched = (fn, ms) => { const id = setTimeout(fn, ms); timeoutsRef.current.push(id); };
+
+      useEffect(() => { return () => timeoutsRef.current.forEach(id => clearTimeout(id)); }, []);
+
+      const startProcessing = () => {
+        setStep('processing');
+        let delay = 800;
+        PROCESSING_STEPS.forEach((s, i) => {
+          sched(() => setProcStep(i), delay);
+          delay += s.dur;
+        });
+        sched(() => setProcDone(true), delay + 500);
+      };
+
+      const confirmSection = (id) => {
+        setConfirmed(prev => ({...prev, [id]:true}));
+        if (reviewIdx < REVIEW_SECTIONS.length - 1) {
+          sched(() => setReviewIdx(prev => prev + 1), 400);
+        }
+      };
+
+      const allConfirmed = REVIEW_SECTIONS.every(s => confirmed[s.id]);
+
+      // ---- UPLOAD STEP ----
+      if (step === 'upload') {
+        return (
+          <div className="max-w-3xl mx-auto p-8">
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background:B.offWhite}}>
+                <Icons.settings size={28} cls="text-teal-700"/>
+              </div>
+              <h2 className="text-xl font-bold mb-2" style={{color:B.teal}}>Points Policy Configuration</h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">Upload your attendance policy document and our AI will read it, extract the configuration, and set up the points engine for your organization.</p>
+            </div>
+
+            <div onClick={startProcessing}
+              className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer transition-all hover:border-teal-400 hover:bg-teal-50/30 group">
+              <div className="w-16 h-16 rounded-full bg-gray-100 group-hover:bg-teal-100 flex items-center justify-center mx-auto mb-4 transition-all">
+                <Icons.upload size={28} cls="text-gray-400 group-hover:text-teal-600"/>
+              </div>
+              <p className="font-semibold text-gray-700 mb-1">Drop your attendance policy here</p>
+              <p className="text-sm text-gray-400 mb-4">PDF, DOCX, or image — we'll read it</p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-all" style={{background:B.teal}}>
+                <Icons.upload size={16}/>
+                Choose File
+              </div>
+            </div>
+
+            <div className="mt-6 bg-gray-50 rounded-xl p-4">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">What the AI extracts</div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label:'Point Values', desc:'Infraction types, timing modifiers, duration bands' },
+                  { label:'Thresholds', desc:'Discipline levels and actions at each' },
+                  { label:'Expiration', desc:'Rolling or calendar year, time window' },
+                  { label:'Exclusions', desc:'Protected and approved absence types' },
+                  { label:'Special Rules', desc:'NCNS triggers, consolidation, overtime' },
+                  { label:'Ambiguities', desc:'Unclear rules flagged for your review' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Icons.check size={14} cls="text-teal-500 mt-0.5 flex-shrink-0"/>
+                    <div>
+                      <div className="text-xs font-semibold text-gray-700">{item.label}</div>
+                      <div className="text-[11px] text-gray-400">{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ---- PROCESSING STEP ----
+      if (step === 'processing') {
+        return (
+          <div className="max-w-2xl mx-auto p-8">
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse" style={{background:B.offWhite}}>
+                <Icons.bot size={28} cls="text-teal-700"/>
+              </div>
+              <h2 className="text-xl font-bold mb-2" style={{color:B.teal}}>Reading Your Policy...</h2>
+              <p className="text-sm text-gray-500">AI is analyzing "Brookville Attendance Policy.pdf"</p>
+            </div>
+
+            {/* File preview */}
+            <div className="bg-white rounded-xl border p-4 mb-6 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                <Icons.file size={20} cls="text-red-500"/>
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-gray-700">Brookville Attendance Policy.pdf</div>
+                <div className="text-xs text-gray-400">3 pages · 108 KB · Berry Global — BRPA</div>
+              </div>
+              <div className="text-xs font-medium text-teal-600">{procDone ? 'Complete' : 'Processing...'}</div>
+            </div>
+
+            {/* Processing steps */}
+            <div className="bg-white rounded-xl border p-5 space-y-3">
+              {PROCESSING_STEPS.map((s, i) => {
+                const isActive = i === procStep && !procDone;
+                const isDone = i < procStep || procDone;
+                return (
+                  <div key={i} className={`flex items-start gap-3 transition-all ${i > procStep && !procDone ? 'opacity-30' : 'opacity-100'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${isDone ? 'bg-teal-100' : isActive ? 'bg-yellow-100 animate-pulse' : 'bg-gray-100'}`}>
+                      {isDone ? <Icons.check size={12} cls="text-teal-600"/> : isActive ? <span className="w-2 h-2 rounded-full bg-yellow-500"/> : <span className="w-2 h-2 rounded-full bg-gray-300"/>}
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm font-medium ${isDone || isActive ? 'text-gray-700' : 'text-gray-400'}`}>{s.label}</div>
+                      {(isDone || isActive) && <div className="text-xs text-gray-400 mt-0.5">{s.detail}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {procDone && (
+              <div className="mt-6 animate-fadeIn">
+                <button onClick={() => setStep('review')}
+                  className="w-full py-3 rounded-xl text-white font-bold text-sm transition-all hover:opacity-90"
+                  style={{background:B.teal}}>
+                  Review Extracted Configuration
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ---- REVIEW STEP ----
+      if (step === 'review') {
+        const sec = REVIEW_SECTIONS[reviewIdx];
+        return (
+          <div className="max-w-6xl mx-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold" style={{color:B.teal}}>Review Configuration</h2>
+                <p className="text-sm text-gray-500">Confirm each section extracted from your policy. Edit anything the AI got wrong.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">{Object.keys(confirmed).length} of {REVIEW_SECTIONS.length} confirmed</span>
+                <div className="flex gap-1">
+                  {REVIEW_SECTIONS.map((s, i) => (
+                    <div key={i} className={`w-3 h-3 rounded-full cursor-pointer transition-all ${confirmed[s.id] ? 'bg-teal-500' : i === reviewIdx ? 'bg-yellow-400 ring-2 ring-yellow-200' : 'bg-gray-200'}`}
+                      onClick={() => setReviewIdx(i)}/>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-6">
+              {/* Section nav */}
+              <div className="col-span-1 space-y-1">
+                {REVIEW_SECTIONS.map((s, i) => (
+                  <button key={i} onClick={() => setReviewIdx(i)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-2 transition-all ${i === reviewIdx ? 'bg-teal-50 font-semibold' : 'hover:bg-gray-50'}`}
+                    style={i === reviewIdx ? {color:B.teal} : {}}>
+                    {confirmed[s.id] ? <Icons.checkCircle size={16} cls="text-teal-500 flex-shrink-0"/> : <span className="w-4 h-4 rounded-full border-2 border-gray-300 flex-shrink-0"/>}
+                    <span className="truncate">{s.title}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Section detail */}
+              <div className="col-span-3 bg-white rounded-xl border p-6 animate-fadeIn" key={sec.id}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background:B.offWhite}}>
+                      <sec.icon size={20} cls="text-teal-700"/>
+                    </div>
+                    <div>
+                      <h3 className="font-bold" style={{color:B.teal}}>{sec.title}</h3>
+                      <p className="text-xs text-gray-500">{sec.description}</p>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-[11px] font-semibold ${sec.confidence === 'high' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {sec.confidence === 'high' ? 'High confidence' : 'Review recommended'}
+                  </span>
+                </div>
+
+                {/* Matrix view */}
+                {sec.id === 'matrix' && (
+                  <div className="overflow-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr>
+                          {sec.data.headers.map((h, i) => (
+                            <th key={i} className={`px-3 py-2 text-left font-semibold border-b ${i === 0 ? 'text-gray-500' : 'text-teal-700 bg-teal-50/50'}`}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sec.data.rows.map((row, i) => (
+                          <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                            {row.map((cell, j) => (
+                              <td key={j} className={`px-3 py-2.5 ${j === 0 ? 'font-medium text-gray-700' : 'text-center font-semibold'} ${cell === '6 pts' ? 'text-red-600 bg-red-50/30' : cell === '—' ? 'text-gray-300' : ''}`}>
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-3 text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2">
+                      Mid-shift = halfway point of scheduled shift (4 hrs for 8-hr shifts, 6 hrs for 12-hr shifts)
+                    </div>
+                  </div>
+                )}
+
+                {/* Thresholds view */}
+                {sec.id === 'thresholds' && (
+                  <div className="space-y-3">
+                    {sec.data.items.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4 p-3 rounded-lg border hover:bg-gray-50/50">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${i === 3 ? 'bg-red-100 text-red-700' : i === 2 ? 'bg-orange-100 text-orange-700' : i === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {item.points.replace(' points','')}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm text-gray-700">{item.action}</div>
+                          <div className="text-xs text-gray-400">at {item.points}</div>
+                        </div>
+                        <div className="text-[11px] text-gray-400 max-w-[180px] text-right">{item.signers}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Expiration view */}
+                {sec.id === 'expiration' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-teal-50/50 border border-teal-100">
+                      <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
+                        <Icons.refresh size={24} cls="text-teal-700"/>
+                      </div>
+                      <div>
+                        <div className="font-bold text-teal-800">{sec.data.method}</div>
+                        <div className="text-sm text-teal-600">{sec.data.detail}</div>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs font-semibold text-gray-500 mb-2">Example</div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="flex-1 text-center p-2 rounded bg-white border">
+                          <div className="font-bold text-gray-700">May 1, 2025</div>
+                          <div className="text-gray-400">Point incurred</div>
+                        </div>
+                        <span className="text-gray-400">→</span>
+                        <div className="flex-1 text-center p-2 rounded bg-white border">
+                          <div className="font-bold text-teal-700">May 1, 2026</div>
+                          <div className="text-gray-400">Point expires</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Exclusions view */}
+                {sec.id === 'exclusions' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {sec.data.categories.map((cat, i) => (
+                      <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-gray-50/50">
+                        <div className="flex items-center gap-2">
+                          <Icons.shield size={14} cls="text-teal-500"/>
+                          <span className="text-sm text-gray-700">{cat.name}</span>
+                        </div>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cat.owner === 'System' ? 'bg-teal-100 text-teal-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {cat.owner}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Special rules view */}
+                {sec.id === 'special' && (
+                  <div className="space-y-3">
+                    {sec.data.rules.map((rule, i) => (
+                      <div key={i} className={`p-3 rounded-lg border ${rule.enabled ? 'bg-white' : 'bg-gray-50'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-5 h-5 rounded flex items-center justify-center ${rule.enabled ? 'bg-teal-100' : 'bg-gray-200'}`}>
+                              {rule.enabled ? <Icons.check size={12} cls="text-teal-600"/> : <Icons.x size={12} cls="text-gray-400"/>}
+                            </div>
+                            <span className="text-sm font-semibold text-gray-700">{rule.name}</span>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${rule.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {rule.enabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-7">{rule.detail}</p>
+                        {rule.flag && (
+                          <div className="ml-7 mt-1.5 text-[11px] text-yellow-700 bg-yellow-50 rounded px-2 py-1 inline-block">
+                            ⚠ {rule.flag}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Confirm/Edit buttons */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <button className="text-sm text-gray-500 hover:text-gray-700 font-medium">Edit Values</button>
+                  {confirmed[sec.id] ? (
+                    <div className="flex items-center gap-2 text-teal-600 text-sm font-semibold">
+                      <Icons.checkCircle size={18}/>
+                      Confirmed
+                    </div>
+                  ) : (
+                    <button onClick={() => confirmSection(sec.id)}
+                      className="px-6 py-2 rounded-lg text-white text-sm font-semibold transition-all hover:opacity-90"
+                      style={{background:B.teal}}>
+                      Confirm Section
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Activate button */}
+            {allConfirmed && (
+              <div className="mt-6 animate-fadeIn">
+                <button onClick={() => setStep('complete')}
+                  className="w-full py-3 rounded-xl text-white font-bold text-sm transition-all hover:opacity-90"
+                  style={{background:B.teal}}>
+                  Activate Policy Configuration
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ---- COMPLETE STEP ----
+      return (
+        <div className="max-w-2xl mx-auto p-8">
+          <div className="text-center mb-8 animate-fadeIn">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background:'#E8F5E9'}}>
+              <Icons.checkCircle size={32} cls="text-green-600"/>
+            </div>
+            <h2 className="text-xl font-bold mb-2" style={{color:B.teal}}>Policy Configured!</h2>
+            <p className="text-sm text-gray-500 max-w-md mx-auto">Your Brookville attendance policy is now active. The points engine will calculate based on these rules.</p>
+          </div>
+
+          <div className="bg-white rounded-xl border p-5 mb-6">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Configuration Summary</div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label:'Policy Dimensions', value:'3D Matrix', sub:'Notification timing × Duration × Event type' },
+                { label:'Discipline Levels', value:'4 Thresholds', sub:'3 / 6 / 9 / >9 points' },
+                { label:'Expiration', value:'Rolling 12-Month', sub:'Per-occurrence anniversary' },
+                { label:'Exclusion Categories', value:'10 Types', sub:'4 system-auto, 6 HR-controlled' },
+                { label:'Special Rules', value:'3 Active', sub:'Consecutive consolidation, 2-NCNS trigger, OT tracking' },
+                { label:'Status', value:'Active', sub:'Ready to process attendance events' }
+              ].map((item, i) => (
+                <div key={i} className="p-3 rounded-lg bg-gray-50">
+                  <div className="text-xs text-gray-500">{item.label}</div>
+                  <div className="font-bold text-sm" style={{color:B.teal}}>{item.value}</div>
+                  <div className="text-[11px] text-gray-400">{item.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100">
+            <div className="flex items-start gap-3">
+              <Icons.bot size={20} cls="text-teal-600 flex-shrink-0 mt-0.5"/>
+              <div>
+                <div className="text-sm font-semibold text-teal-800">What happens next</div>
+                <p className="text-xs text-teal-600 mt-1 leading-relaxed">
+                  The points engine is now ready to process attendance events. When employees call off via TeamSense, the system will automatically calculate the correct point value based on notification timing and absence duration. Supervisors can review and correct via the shift conversation. Employees can text to check their balance.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={() => { setStep('upload'); setProcStep(0); setProcDone(false); setReviewIdx(0); setConfirmed({}); }}
+            className="mt-4 w-full py-2 rounded-lg border-2 text-sm font-semibold transition-all hover:bg-gray-50"
+            style={{borderColor:B.teal, color:B.teal}}>
+            Restart Demo
+          </button>
+        </div>
+      );
+    }
+
     // ===== WELCOME OVERLAY =====
     function WelcomeOverlay({ onStart }) {
       return (
@@ -1143,10 +1613,10 @@
               </a>
             </div>
 
-            {/* Three views */}
+            {/* Four views */}
             <div className="px-8 pb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Three Persona Views</div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Four Persona Views</div>
+              <div className="grid grid-cols-4 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Icons.msg size={14} cls="text-teal-600"/>
@@ -1167,6 +1637,13 @@
                     <span className="text-sm font-semibold" style={{color:B.teal}}>Employee (James)</span>
                   </div>
                   <p className="text-xs text-gray-600 leading-relaxed">Self-service via SMS. Employees text to check their points balance, understand thresholds, and get guidance. No app, no portal — just text. This is the "Data Birthright" in action.</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Icons.settings size={14} cls="text-teal-600"/>
+                    <span className="text-sm font-semibold" style={{color:B.teal}}>HR Setup (Gina)</span>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">AI-powered policy import. Upload an attendance policy PDF and watch the AI extract point values, thresholds, expiration rules, and exclusions — then review and confirm the configuration.</p>
                 </div>
               </div>
             </div>
@@ -1225,7 +1702,8 @@
       const tabs = [
         { id:'supervisor', label:'Supervisor (Sal)', icon: Icons.msg },
         { id:'hr', label:'HR Dashboard', icon: Icons.barChart },
-        { id:'employee', label:'Employee (James)', icon: Icons.user }
+        { id:'employee', label:'Employee (James)', icon: Icons.user },
+        { id:'setup', label:'HR Setup (Gina)', icon: Icons.settings }
       ];
 
       return (
@@ -1269,6 +1747,7 @@
           {tab === 'supervisor' && <SupervisorChat key="sup" autoStart={!showWelcome}/>}
           {tab === 'hr' && <HRDashboard/>}
           {tab === 'employee' && <EmployeeChat key="emp"/>}
+          {tab === 'setup' && <PolicySetup key="setup"/>}
 
           {/* Welcome overlay */}
           {showWelcome && <WelcomeOverlay onStart={() => setShowWelcome(false)}/>}
