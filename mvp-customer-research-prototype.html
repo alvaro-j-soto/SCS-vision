@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeamSense — Shift Start Experience Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --teal:#263D39;--mint:#6DAEA2;--gold:#F6B725;--gold-20:rgba(246,183,37,.2);
+  --off-white:#F5FAF8;--white:#FFFFFF;
+  --text:#263D39;--text-secondary:#4A6B64;--text-light:#7A9B93;
+  --bubble-agent:#E8F5E9;--bubble-agent-text:#1B5E20;
+  --bubble-user:#263D39;--bubble-user-text:#fff;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Urbanist',system-ui,sans-serif;color:var(--text);background:#F0F4F3;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+/* ── INTRO ── */
+.intro{max-width:560px;text-align:center;padding:60px 24px 20px}
+.intro-logo{font-size:1.3rem;font-weight:800;color:var(--teal);margin-bottom:24px}
+.intro-logo span{color:var(--mint)}
+.intro h1{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800;line-height:1.2;letter-spacing:-.02em;margin-bottom:12px}
+.intro p{font-size:1rem;color:var(--text-secondary);line-height:1.55;margin-bottom:8px}
+.intro .context{font-size:.9rem;color:var(--text-light);background:var(--white);padding:16px 20px;border-radius:12px;margin-top:20px;line-height:1.5;text-align:left}
+.intro .context strong{color:var(--teal)}
+
+/* ── iPHONE ── */
+.phone-container{width:100%;max-width:400px;padding:0 16px;margin:24px auto}
+.phone{background:#1a1a1a;border-radius:52px;padding:12px;box-shadow:0 24px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08) inset;position:relative}
+.phone-notch{width:120px;height:34px;background:#1a1a1a;border-radius:20px;margin:0 auto 0;position:relative;z-index:10}
+.phone-notch::after{content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#2a2a2a;border:2px solid #333}
+.phone-screen{background:#fff;border-radius:42px;overflow:hidden;display:flex;flex-direction:column;height:660px}
+
+/* iOS status bar */
+.ios-status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 0;background:#f6f6f6;font-size:.72rem;font-weight:600;color:#1c1c1e}
+.ios-status-bar .ios-time{font-weight:700}
+.ios-status-bar .ios-icons{display:flex;gap:5px;align-items:center}
+.ios-status-bar .ios-icons span{font-size:.65rem}
+
+/* iOS Messages header */
+.phone-header{padding:6px 16px 10px;background:#f6f6f6;display:flex;flex-direction:column;align-items:center;border-bottom:1px solid #e5e5e5}
+.phone-header .ios-back{position:absolute;left:24px;color:#007AFF;font-size:.85rem;font-weight:500;display:flex;align-items:center;gap:2px;cursor:default}
+.phone-header .ios-back::before{content:'‹';font-size:1.3rem;font-weight:300;line-height:1}
+.phone-header-inner{display:flex;flex-direction:column;align-items:center;position:relative;width:100%}
+.ios-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--mint),var(--teal));display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;margin-bottom:3px}
+.phone-header .sender{font-size:.72rem;font-weight:600;color:#1c1c1e}
+.phone-header .time{display:none}
+.sms-badge{display:inline-block;padding:1px 6px;background:rgba(0,122,255,.1);border-radius:6px;font-size:.55rem;font-weight:700;letter-spacing:.06em;color:#007AFF;margin-left:4px}
+
+/* iMessage Thread */
+.sms-area{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:4px;scroll-behavior:smooth;background:#fff}
+.sms-bubble{max-width:82%;padding:9px 14px;border-radius:18px;font-size:.84rem;line-height:1.42;opacity:0;transform:translateY(12px);transition:opacity .35s ease,transform .35s ease;white-space:pre-wrap;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif}
+.sms-bubble.show{opacity:1;transform:translateY(0)}
+.sms-bubble.agent{background:#e9e9eb;color:#1c1c1e;border-bottom-left-radius:4px;align-self:flex-start}
+.sms-bubble.user{background:#007AFF;color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.sms-time{font-size:.65rem;color:#8e8e93;text-align:center;padding:8px 0 4px;opacity:0;transition:opacity .3s;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.sms-time.show{opacity:1}
+
+/* iOS typing indicator */
+.typing-indicator{align-self:flex-start;background:#e9e9eb;padding:12px 18px;border-radius:18px;border-bottom-left-radius:4px;display:none}
+.typing-indicator.show{display:flex;gap:5px}
+.typing-dot{width:8px;height:8px;border-radius:50%;background:#b0b0b5;animation:typingBounce 1.4s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* iOS compose bar */
+.phone-compose{padding:8px 10px 28px;display:flex;gap:8px;align-items:center;background:#f6f6f6;border-top:1px solid #e5e5e5}
+.phone-compose .ios-plus{width:30px;height:30px;border-radius:50%;background:#e5e5ea;color:#8e8e93;border:none;font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phone-compose input{flex:1;border:1px solid #c7c7cc;border-radius:20px;padding:7px 14px;font-size:.82rem;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;outline:none;color:#1c1c1e;background:#fff;transition:border-color .2s}
+.phone-compose input:focus{border-color:#007AFF}
+.phone-compose input.typing{color:#1c1c1e;border-color:#007AFF}
+.phone-compose button{width:30px;height:30px;border-radius:50%;background:#007AFF;color:#fff;border:none;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:all .2s;opacity:.3;flex-shrink:0}
+.phone-compose button.ready{opacity:1;cursor:pointer}
+
+/* iOS home indicator */
+.ios-home-indicator{width:134px;height:5px;background:#1c1c1e;border-radius:3px;margin:0 auto;opacity:.2;position:relative;bottom:12px}
+
+/* ── FACILITATOR SECTION ── */
+.facilitator{max-width:560px;width:100%;padding:0 24px;margin:0 auto}
+.facilitator-card{background:var(--white);border-radius:16px;padding:20px 24px;margin-top:16px;border:1px solid rgba(109,174,162,.2);opacity:0;transform:translateY(12px);transition:all .5s ease}
+.facilitator-card.show{opacity:1;transform:translateY(0)}
+.facilitator-card.hidden{display:none}
+.facilitator-label{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mint);margin-bottom:10px}
+.facilitator-instruction{font-size:.9rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px}
+.facilitator-instruction strong{color:var(--teal)}
+.facilitator-options{display:flex;flex-direction:column;gap:8px}
+.facilitator-option{padding:12px 16px;border:1px solid rgba(38,61,57,.12);border-radius:12px;background:var(--off-white);color:var(--text);font-size:.88rem;font-weight:500;font-family:inherit;cursor:pointer;text-align:left;transition:all .2s;line-height:1.35}
+.facilitator-option:hover{border-color:var(--mint);background:rgba(109,174,162,.08);transform:translateX(4px)}
+.facilitator-option:active{transform:scale(.98)}
+.facilitator-card.disabled .facilitator-option{opacity:.35;pointer-events:none}
+
+/* ── RESEARCH PROMPTS ── */
+.research-prompt{max-width:560px;padding:16px 24px;margin:0 auto;opacity:0;transform:translateY(16px);transition:all .5s ease}
+.research-prompt.show{opacity:1;transform:translateY(0)}
+.rp-box{background:rgba(246,183,37,.08);border:1px solid rgba(246,183,37,.2);border-radius:14px;padding:18px 22px;text-align:center}
+.rp-box .rp-label{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8B6600;margin-bottom:6px}
+.rp-box .rp-question{font-size:1.05rem;font-weight:700;color:var(--teal);line-height:1.35;margin-bottom:8px}
+.rp-box .rp-subtext{font-size:.85rem;color:var(--text-secondary);line-height:1.5}
+
+/* ── PROGRESS ── */
+.progress-bar{width:100%;max-width:420px;padding:0 30px;margin:20px auto 0}
+.progress-track{height:4px;background:rgba(38,61,57,.1);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--gold));border-radius:2px;width:0;transition:width .6s ease}
+.progress-label{display:flex;justify-content:space-between;margin-top:6px;font-size:.72rem;color:var(--text-light)}
+
+/* ── COMPLETION ── */
+.completion{max-width:560px;text-align:center;padding:40px 24px 80px;display:none}
+.completion.show{display:block}
+.completion h2{font-size:1.5rem;font-weight:800;margin-bottom:12px}
+.completion p{font-size:.95rem;color:var(--text-secondary);line-height:1.55;margin-bottom:8px}
+.completion .summary-box{margin-top:24px;padding:20px;background:var(--white);border-radius:14px;text-align:left}
+.completion .summary-box h3{font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--teal)}
+.completion .summary-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(38,61,57,.06);font-size:.88rem;color:var(--text-secondary)}
+.completion .summary-item:last-child{border-bottom:none}
+.completion .summary-item .label{font-weight:600;color:var(--teal);min-width:120px}
+.restart-btn{margin-top:24px;padding:14px 32px;border:none;border-radius:28px;background:var(--teal);color:var(--white);font-size:.95rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s}
+.restart-btn:hover{background:var(--mint)}
+
+/* ── HR EMAIL DIGEST PREVIEW ── */
+.hr-digest-container{max-width:560px;width:100%;padding:0 24px;margin:16px auto 0;opacity:0;transform:translateY(16px);transition:all .6s ease}
+.hr-digest-container.show{opacity:1;transform:translateY(0)}
+.hr-digest-card{background:var(--white);border-radius:16px;overflow:hidden;border:1px solid rgba(38,61,57,.12);box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.hr-email-header{background:linear-gradient(135deg,var(--teal),#1a2d2a);padding:14px 20px;display:flex;align-items:center;gap:10px}
+.hr-email-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.hr-email-meta{flex:1}
+.hr-email-meta .email-from{font-size:.72rem;color:rgba(255,255,255,.6)}
+.hr-email-meta .email-subject{font-size:.88rem;font-weight:700;color:var(--white)}
+.hr-email-badge{padding:3px 8px;background:rgba(246,183,37,.25);border-radius:6px;font-size:.6rem;font-weight:700;letter-spacing:.08em;color:var(--gold)}
+.hr-email-body{padding:18px 20px;font-size:.82rem;color:var(--text-secondary);line-height:1.55}
+.hr-email-body strong{color:var(--teal)}
+.hr-email-body .digest-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(38,61,57,.06)}
+.hr-email-body .digest-row:last-child{border-bottom:none}
+.hr-email-body .digest-label{color:var(--text)}
+.hr-email-body .digest-value{font-weight:700;color:var(--teal)}
+.hr-email-body .digest-flag{margin-top:12px;padding:10px 14px;background:rgba(246,183,37,.08);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;font-size:.8rem;color:#8B6600}
+.hr-digest-note{text-align:center;font-size:.72rem;color:var(--text-light);margin-top:8px;font-style:italic}
+</style>
+</head>
+<body>
+
+<!-- ═══ INTRO ═══ -->
+<div class="intro" id="introSection">
+  <div class="intro-logo">Team<span>Sense</span></div>
+  <h1>What if your shift started<br>with a conversation?</h1>
+  <p>We're exploring a new way for supervisors to manage attendance at shift start — through a quick SMS text conversation instead of checking multiple systems.</p>
+  <p style="font-size:.88rem;color:var(--text-light);margin-top:4px">The experience below is pure SMS. No app to install. No special phone features. Just texting.</p>
+  <div class="context">
+    <strong>Here's the scenario:</strong> It's 6:00 AM. You're a frontline supervisor managing Line A with 18 people scheduled. You just walked onto the floor. Your phone buzzes with a text from TeamSense.
+  </div>
+</div>
+
+<!-- ═══ PROGRESS ═══ -->
+<div class="progress-bar">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label"><span id="progressStep">Step 1 of 7</span><span id="progressPct">0%</span></div>
+</div>
+
+<!-- ═══ PHONE ═══ -->
+<div class="phone-container">
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-screen">
+      <div class="ios-status-bar">
+        <span class="ios-time" id="phoneTime">6:05 AM</span>
+        <div class="ios-icons"><span>&#9679;&#9679;&#9679;&#9679;</span> <span>&#8226;</span> <span style="font-size:.7rem">&#128267;</span></div>
+      </div>
+      <div class="phone-header">
+        <div class="phone-header-inner">
+          <div class="ios-avatar">TS</div>
+          <span class="sender">TeamSense <span class="sms-badge">SMS</span></span>
+        </div>
+      </div>
+      <div class="sms-area" id="smsArea">
+        <div class="typing-indicator" id="typingIndicator">
+          <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+        </div>
+      </div>
+      <div class="phone-compose" id="phoneCompose">
+        <button class="ios-plus">+</button>
+        <input type="text" id="composeInput" placeholder="Text Message" readonly>
+        <button id="sendBtn">&#8593;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FACILITATOR SECTION ═══ -->
+<div class="facilitator" id="facilitatorSection">
+  <div class="facilitator-card hidden" id="facilitatorCard">
+    <div class="facilitator-label" id="facLabel">Researcher guide</div>
+    <div class="facilitator-instruction" id="facInstruction"></div>
+    <div class="facilitator-options" id="facOptions"></div>
+  </div>
+</div>
+
+<!-- ═══ RESEARCH PROMPTS ═══ -->
+<div class="research-prompt" id="researchPrompt">
+  <div class="rp-box">
+    <div class="rp-label" id="rpLabel"></div>
+    <div class="rp-question" id="rpQuestion"></div>
+    <div class="rp-subtext" id="rpSubtext"></div>
+  </div>
+</div>
+
+<!-- ═══ HR EMAIL DIGEST ═══ -->
+<div class="hr-digest-container" id="hrDigestSection">
+  <div class="hr-digest-card">
+    <div class="hr-email-header">
+      <div class="hr-email-icon">&#9993;</div>
+      <div class="hr-email-meta">
+        <div class="email-from">From: TeamSense &lt;notifications@teamsense.com&gt;</div>
+        <div class="email-subject">Daily Attendance Digest — Feb 16, 2026</div>
+      </div>
+      <div class="hr-email-badge">EMAIL</div>
+    </div>
+    <div class="hr-email-body">
+      <p style="margin-bottom:12px"><strong>Good morning —</strong> Here's today's attendance summary across all shifts.</p>
+      <div class="digest-row"><span class="digest-label">Overall attendance</span><span class="digest-value">89% on-time</span></div>
+      <div class="digest-row"><span class="digest-label">Total exceptions</span><span class="digest-value">6 across all shifts</span></div>
+      <div class="digest-row"><span class="digest-label">Supervisor-confirmed (Tier 1)</span><span class="digest-value">4</span></div>
+      <div class="digest-row"><span class="digest-label">Agent-confirmed (Tier 2)</span><span class="digest-value">1</span></div>
+      <div class="digest-row"><span class="digest-label">Unconfirmed (Tier 3)</span><span class="digest-value">1</span></div>
+      <div class="digest-row"><span class="digest-label">Coverage actions completed</span><span class="digest-value">2</span></div>
+      <div class="digest-flag">&#9888; <strong>Flagged for review:</strong> Johnny Rivera (Line A) — NCNS, no prior pattern. Supervisor Sal confirmed.</div>
+    </div>
+  </div>
+  <div class="hr-digest-note">This email is sent to HR daily after all shifts start — no extra work from supervisors</div>
+</div>
+
+<!-- ═══ COMPLETION ═══ -->
+<div class="completion" id="completionSection">
+  <h2>That's the experience.</h2>
+  <p>In about 2 minutes via SMS, you confirmed your team's attendance, triggered coverage for a gap, and adapted your line — all from a text conversation on your phone.</p>
+  <p style="font-size:.88rem;color:var(--text-light)">No app. No buttons. Just texting back and forth with an AI that understands what you mean.</p>
+  <div class="summary-box">
+    <h3>What happened in that conversation:</h3>
+    <div class="summary-item"><span class="label">Shift summary</span><span>You saw exactly who's here and who's missing — by name, with context</span></div>
+    <div class="summary-item"><span class="label">Confirmed</span><span>Johnny as NCNS and Kevin as late arrival — in your own words via text</span></div>
+    <div class="summary-item"><span class="label">Coverage</span><span>Asked TeamSense to find someone to cover — Lisa accepted</span></div>
+    <div class="summary-item"><span class="label">Adapted</span><span>Handled Aisha's absence internally by reassigning</span></div>
+    <div class="summary-item"><span class="label">Follow-up</span><span>Asked a question about the week's call-offs — got an instant answer</span></div>
+    <div class="summary-item"><span class="label">Shift digest</span><span>Got a wrap-up text summarizing everything — and HR got a daily email too</span></div>
+  </div>
+  <button class="restart-btn" onclick="restart()">Experience it again</button>
+</div>
+
+<script>
+// ── Conversation script ──
+const script = [
+  {
+    step: 1,
+    time: '6:05 AM',
+    messages: [
+      {type:'time', text:'6:05 AM'},
+      {type:'agent', text:"Hi Sal. Line A as of 6:05 AM \u2014 14 of 18 clocked in. A few things that need your eyes:\n\nMaria Garcia \u2014 PTO today (approved last week)\n\nKevin Thompson \u2014 scheduled but hasn\u2019t punched in yet. He was late twice last month.\n\nJohnny Rivera \u2014 no punch, no call-off. No pattern of NCNS \u2014 this is unusual for him.\n\nAisha Brooks \u2014 no punch yet. First time this has happened.\n\nLet me know about Kevin, Johnny, and Aisha when you can."}
+    ],
+    facilitator: {
+      instruction: "<strong>Ask the participant:</strong> \"You just got this text. What would you type back?\" If they need a nudge, here are example replies:",
+      options: [
+        "Johnny is NCNS, he didn\u2019t call anyone. Kevin texted me \u2014 he\u2019s running late, car trouble",
+        "Let me check on a few of these before I respond",
+        "Who are the 14 that clocked in?"
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'Would getting this text at shift start be useful to you?',
+      subtext: 'Does seeing individual names with context help more than "4 people are out"? Is texting the right way to get this?'
+    }
+  },
+  {
+    step: 2,
+    time: '6:07 AM',
+    userMessage: null,
+    messages: [
+      {type:'agent', text:"Got it \u2014 marking Johnny as NCNS (no call) and Kevin as late arrival (expected in).\n\nThat leaves Aisha \u2014 any word on her?"}
+    ],
+    facilitator: {
+      instruction: "<strong>Ask:</strong> \"TeamSense understood what you meant and confirmed two people from one text. Now what would you say about Aisha?\"",
+      options: [
+        "Haven\u2019t heard from Aisha. Give her 15 more minutes",
+        "Aisha called me \u2014 she\u2019s sick today",
+        "Mark Aisha as NCNS too"
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'How does this compare to your current process?',
+      subtext: 'Today you might cross-reference a time clock, HRIS, and your own memory. Here you just texted back in your own words. Does this feel faster?'
+    }
+  },
+  {
+    step: 3,
+    time: '6:08 AM',
+    userMessage: null,
+    messages: [
+      {type:'agent', text:"Will check back on Aisha at 6:20.\n\nJohnny is confirmed NCNS \u2014 want me to reach out to available team members to find coverage?"}
+    ],
+    facilitator: {
+      instruction: "<strong>Ask:</strong> \"TeamSense is offering to find coverage for you by texting available people. What would you say?\"",
+      options: [
+        "Yeah, see who can come in",
+        "No, I\u2019ll figure it out internally",
+        "Who\u2019s available right now?"
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'Would you want TeamSense to help find coverage?',
+      subtext: 'Right now you might make phone calls or walk the floor. Here TeamSense would text available team members for you. Is that valuable? Any concerns?'
+    }
+  },
+  {
+    step: 4,
+    time: '6:10 AM',
+    userMessage: null,
+    messages: [
+      {type:'agent', text:"Reaching out to available team members now...\n\nUpdate: Lisa M. replied \u2014 she can come in for Line A. Still waiting on Jose and Marcus."},
+    ],
+    facilitator: {
+      instruction: "<strong>Ask:</strong> \"Lisa texted back that she can come in. What would you tell TeamSense?\"",
+      options: [
+        "Put Lisa on it, thanks",
+        "Wait for Jose too \u2014 I want options",
+        "Actually, I\u2019ll handle coverage myself"
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'How would this change your morning if coverage was handled via text?',
+      subtext: 'Think about the time you currently spend making calls, walking the floor, or tracking down people who might be available.'
+    }
+  },
+  {
+    step: 5,
+    time: '6:20 AM',
+    userMessage: null,
+    messages: [
+      {type:'time', text:'6:20 AM'},
+      {type:'agent', text:"Lisa is confirmed for Johnny\u2019s spot.\n\nAisha update \u2014 still no punch at 6:20. Want me to find coverage for her position too?"}
+    ],
+    facilitator: {
+      instruction: "<strong>Ask:</strong> \"It's been 15 minutes. Aisha still hasn't shown up. What would you do?\"",
+      options: [
+        "No, I\u2019ll move Chen to her station. We\u2019re fine.",
+        "Yeah, see who else is available",
+        "Give Aisha 10 more minutes"
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'Is it useful that TeamSense tracks when you handle things internally?',
+      subtext: 'When you say "I\'ll handle it," that\'s a real staffing decision. Today it\'s invisible. Would capturing it help your team plan better over time?'
+    }
+  },
+  {
+    step: 6,
+    time: '6:22 AM',
+    userMessage: null,
+    messages: [
+      {type:'agent', text:"Got it \u2014 logging Aisha\u2019s absence as covered internally. Line A running with your adjustment.\n\nAnything else you need?"}
+    ],
+    facilitator: {
+      instruction: "<strong>Ask:</strong> \"After the shift start flow, you can ask TeamSense follow-up questions. Is there anything you'd ask?\"",
+      options: [
+        "How many people called off this week on Line A?",
+        "Is Kevin usually late?",
+        "No, we\u2019re good. Thanks."
+      ]
+    },
+    research: {
+      label: 'Pause and discuss',
+      question: 'Would you ask follow-up questions like this?',
+      subtext: 'After shift start, you could text TeamSense questions about attendance patterns, who\'s been late, call-off trends. Would that be useful day-to-day?'
+    }
+  },
+  {
+    step: 7,
+    time: '6:35 AM',
+    userMessage: null,
+    messages: [
+      {type:'time', text:'6:35 AM \u2014 Shift digest'},
+      {type:'agent', text:"Line A shift wrap-up:\n\n\u2713 14 of 17 on the floor\n\u2713 3 exceptions resolved:\n  \u2014 Johnny Rivera: NCNS (confirmed by you)\n  \u2014 Kevin Thompson: late, car trouble\n  \u2014 Aisha: absent, adapted internally\n\u2713 Coverage: Lisa covering for Johnny\n\u2713 Maria Garcia: PTO (pre-approved)\n\nFull details: ts.link/sal/line-a/feb-16"}
+    ],
+    facilitator: null,
+    research: {
+      label: 'Final discussion',
+      question: 'Would this wrap-up text be useful at the end of each shift start?',
+      subtext: 'This summary arrives after the confirmation window closes. You\u2019d also get a link to a web page with more detail. And your HR team gets a daily email digest across all shifts \u2014 no extra work from you. Would this help?'
+    }
+  }
+];
+
+const followUpResponses = {
+  "How many people called off this week on Line A?": "This week on Line A: 4 call-offs total across Mon\u2013Thu. Monday and Wednesday had the most. Johnny has no prior call-offs this quarter \u2014 today was unusual.",
+  "Is Kevin usually late?": "Kevin has been late twice in the past 30 days (both Mondays). Before that, clean record for 6 months. Today would be his 3rd late in the quarter.",
+  "No, we\u2019re good. Thanks.": "You\u2019re all set. Have a good shift, Sal."
+};
+
+// Roster display — SMS-optimized (~220 chars, 2 segments)
+const rosterMessage = "Your 14 on the floor: Lisa Martinez, Jose Padilla, Marcus Williams, Chen Liu, Sarah Kim, David Rodriguez, Ana Morales, Tom Henderson, Mike Santos, Pat Davis, Rachel Cooper, James Wilson, Carlos Reyes, Priya Sharma.";
+
+let currentStep = 0;
+const smsArea = document.getElementById('smsArea');
+const typingIndicator = document.getElementById('typingIndicator');
+const composeInput = document.getElementById('composeInput');
+const sendBtn = document.getElementById('sendBtn');
+const facilitatorCard = document.getElementById('facilitatorCard');
+const facInstruction = document.getElementById('facInstruction');
+const facOptions = document.getElementById('facOptions');
+const researchPrompt = document.getElementById('researchPrompt');
+
+function updateProgress(step, total) {
+  const pct = Math.round((step / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressStep').textContent = `Step ${step} of ${total}`;
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function addBubble(type, text) {
+  return new Promise(resolve => {
+    const el = document.createElement('div');
+    if (type === 'time') {
+      el.className = 'sms-time';
+      el.textContent = text;
+      smsArea.insertBefore(el, typingIndicator);
+      setTimeout(() => { el.classList.add('show'); resolve(); }, 50);
+    } else {
+      el.className = `sms-bubble ${type}`;
+      el.textContent = text;
+      smsArea.insertBefore(el, typingIndicator);
+      setTimeout(() => { el.classList.add('show'); smsArea.scrollTop = smsArea.scrollHeight; resolve(); }, 50);
+    }
+  });
+}
+
+function showTyping(duration) {
+  return new Promise(resolve => {
+    typingIndicator.classList.add('show');
+    smsArea.scrollTop = smsArea.scrollHeight;
+    setTimeout(() => {
+      typingIndicator.classList.remove('show');
+      resolve();
+    }, duration);
+  });
+}
+
+function showResearch(data) {
+  document.getElementById('rpLabel').textContent = data.label;
+  document.getElementById('rpQuestion').textContent = data.question;
+  document.getElementById('rpSubtext').textContent = data.subtext;
+  researchPrompt.classList.add('show');
+}
+
+function hideResearch() {
+  researchPrompt.classList.remove('show');
+}
+
+function hideFacilitator() {
+  facilitatorCard.classList.remove('show');
+  setTimeout(() => facilitatorCard.classList.add('hidden'), 400);
+}
+
+async function simulateTyping(text) {
+  composeInput.classList.add('typing');
+  sendBtn.classList.add('ready');
+  // Simulate typing character by character (fast)
+  let displayed = '';
+  const step = Math.max(1, Math.floor(text.length / 20));
+  for (let i = 0; i < text.length; i += step) {
+    displayed = text.substring(0, i + step);
+    composeInput.value = displayed;
+    await new Promise(r => setTimeout(r, 30));
+  }
+  composeInput.value = text;
+  await new Promise(r => setTimeout(r, 300));
+  // "Send" it
+  composeInput.value = '';
+  composeInput.classList.remove('typing');
+  sendBtn.classList.remove('ready');
+}
+
+function showFacilitator(data, callback) {
+  facInstruction.innerHTML = data.instruction;
+  facOptions.innerHTML = '';
+  facilitatorCard.classList.remove('hidden', 'disabled');
+
+  data.options.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'facilitator-option';
+    btn.textContent = text;
+    btn.onclick = async () => {
+      facilitatorCard.classList.add('disabled');
+      hideResearch();
+      // Simulate typing in phone input
+      await simulateTyping(text);
+      hideFacilitator();
+      callback(text, i);
+    };
+    facOptions.appendChild(btn);
+  });
+
+  // Reveal with animation
+  setTimeout(() => facilitatorCard.classList.add('show'), 100);
+}
+
+async function playStep(stepIndex) {
+  const s = script[stepIndex];
+  currentStep = stepIndex;
+  updateProgress(s.step, 7);
+  document.getElementById('phoneTime').textContent = s.time;
+
+  // Show user's previous choice if exists
+  if (s.userMessage) {
+    await addBubble('user', s.userMessage);
+    await showTyping(1200);
+  }
+
+  // Show agent messages
+  for (const msg of s.messages) {
+    if (msg.type === 'agent') {
+      await showTyping(800 + Math.random() * 600);
+    }
+    await addBubble(msg.type, msg.text);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  smsArea.scrollTop = smsArea.scrollHeight;
+
+  // Show research prompt
+  if (s.research) {
+    setTimeout(() => showResearch(s.research), 600);
+  }
+
+  // Show facilitator options (outside the phone)
+  if (s.facilitator) {
+    showFacilitator(s.facilitator, async (text, idx) => {
+
+      // ── Step 1 branching: handle roster request and "let me check" ──
+      if (stepIndex === 0 && idx === 2) {
+        // "Who are the 14 that clocked in?" — show roster via SMS
+        await addBubble('user', text);
+        await showTyping(1400);
+        await addBubble('agent', rosterMessage);
+        await new Promise(r => setTimeout(r, 400));
+        await showTyping(800);
+        await addBubble('agent', "Now \u2014 about those exceptions. Let me know about Kevin, Johnny, and Aisha when you can.");
+        smsArea.scrollTop = smsArea.scrollHeight;
+
+        showResearch({
+          label: 'Pause and discuss',
+          question: 'Was that roster useful via text? Or is the exceptions-only summary enough?',
+          subtext: 'The agent sent all 14 names in one text (~220 chars, 2 SMS segments). Some supervisors want the full picture. Others just want exceptions. Which are you?'
+        });
+
+        showFacilitator({
+          instruction: "<strong>Ask:</strong> \"Now that you\u2019ve seen who\u2019s on the floor, what would you text back about the exceptions?\"",
+          options: [
+            "Johnny is NCNS, he didn\u2019t call anyone. Kevin texted me \u2014 he\u2019s running late, car trouble",
+            "Aisha called me, she\u2019s sick. Still haven\u2019t heard from Johnny."
+          ]
+        }, async (text2, idx2) => {
+          script[1].userMessage = text2;
+          await playStep(1);
+        });
+        return;
+      }
+
+      if (stepIndex === 0 && idx === 1) {
+        // "Let me check on a few of these" — agent waits patiently
+        await addBubble('user', text);
+        await showTyping(800);
+        await addBubble('agent', "Take your time. I\u2019ll be here \u2014 just text me when you know more about Kevin, Johnny, and Aisha.");
+        smsArea.scrollTop = smsArea.scrollHeight;
+
+        showResearch({
+          label: 'Pause and discuss',
+          question: 'Would you want the system to wait patiently like this?',
+          subtext: 'Some supervisors need to walk the floor or make a call before confirming. The agent waits without nagging. Does that feel right?'
+        });
+
+        showFacilitator({
+          instruction: "<strong>Ask:</strong> \"After checking, what would you text back?\"",
+          options: [
+            "Ok \u2014 Johnny is NCNS, he didn\u2019t call anyone. Kevin texted me, car trouble, he\u2019s on his way.",
+            "Couldn\u2019t find Johnny. Mark him NCNS. Kevin just walked in late."
+          ]
+        }, async (text2, idx2) => {
+          script[1].userMessage = text2;
+          await playStep(1);
+        });
+        return;
+      }
+
+      // ── Normal flow for all other steps ──
+      if (stepIndex < script.length - 1) {
+        // Step 6 (follow-up) — show response, then auto-flow into digest
+        if (stepIndex === 5) {
+          await addBubble('user', text);
+          await showTyping(1000);
+          const response = followUpResponses[text] || "You\u2019re all set. Have a good shift, Sal.";
+          await addBubble('agent', response);
+          smsArea.scrollTop = smsArea.scrollHeight;
+          hideFacilitator();
+          // Auto-flow into digest after a pause
+          setTimeout(() => playStep(stepIndex + 1), 2000);
+        } else {
+          script[stepIndex + 1].userMessage = text;
+          await playStep(stepIndex + 1);
+        }
+      } else {
+        // Last step — show completion
+        updateProgress(7, 7);
+        hideFacilitator();
+        setTimeout(() => {
+          document.getElementById('completionSection').classList.add('show');
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }, 2000);
+      }
+    });
+  }
+
+  // Step 7 (digest) has no facilitator — auto-show research, HR email, then completion
+  if (!s.facilitator && stepIndex === script.length - 1) {
+    updateProgress(7, 7);
+    setTimeout(() => {
+      if (s.research) showResearch(s.research);
+    }, 600);
+    // Show HR email digest card
+    setTimeout(() => {
+      document.getElementById('hrDigestSection').classList.add('show');
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 1200);
+    setTimeout(() => {
+      document.getElementById('completionSection').classList.add('show');
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 2500);
+  }
+}
+
+function restart() {
+  smsArea.querySelectorAll('.sms-bubble,.sms-time').forEach(el => el.remove());
+  document.getElementById('completionSection').classList.remove('show');
+  document.getElementById('hrDigestSection').classList.remove('show');
+  hideResearch();
+  hideFacilitator();
+  script.forEach(s => s.userMessage = null);
+  updateProgress(0, 7);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => playStep(0), 600);
+}
+
+// Start
+setTimeout(() => playStep(0), 800);
+</script>
+</body>
+</html>
