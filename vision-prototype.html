@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision: Supervisor Attendance Control Surface</title>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --teal:#263D39;--teal-90:rgba(38,61,57,.9);--teal-70:rgba(38,61,57,.7);--teal-40:rgba(38,61,57,.4);--teal-15:rgba(38,61,57,.15);--teal-05:rgba(38,61,57,.05);
+  --mint:#6DAEA2;--mint-30:rgba(109,174,162,.3);--mint-15:rgba(109,174,162,.15);
+  --gold:#F6B725;--gold-20:rgba(246,183,37,.2);
+  --coral:#FF957D;--orange:#BF4B08;
+  --off-white:#F5FAF8;--white:#FFFFFF;
+  --text:#263D39;--text-secondary:#4A6B64;--text-light:#7A9B93;
+  --section-pad:clamp(60px,10vh,120px) clamp(20px,5vw,80px);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Urbanist',system-ui,sans-serif;color:var(--text);background:var(--off-white);overflow-x:hidden;line-height:1.6}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(245,250,248,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--teal-15);transition:transform .3s}
+nav.hidden{transform:translateY(-100%)}
+.nav-logo{font-weight:800;font-size:1.1rem;color:var(--teal);letter-spacing:-.02em}
+.nav-logo span{color:var(--mint)}
+.nav-links{display:flex;gap:6px}
+.nav-links a{font-size:.8rem;font-weight:600;color:var(--teal-70);text-decoration:none;padding:6px 14px;border-radius:20px;transition:all .2s}
+.nav-links a:hover,.nav-links a.active{background:var(--teal);color:var(--white)}
+@media(max-width:900px){.nav-links{display:none}}
+
+/* ── SECTION BASE ── */
+section{padding:var(--section-pad);min-height:100vh;display:flex;flex-direction:column;justify-content:center;position:relative}
+section .inner{max-width:1100px;margin:0 auto;width:100%}
+.section-label{font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--mint);margin-bottom:12px}
+.section-title{font-size:clamp(2rem,4.5vw,3.5rem);font-weight:800;line-height:1.12;letter-spacing:-.03em;margin-bottom:24px}
+.section-subtitle{font-size:clamp(1.1rem,2vw,1.35rem);font-weight:400;color:var(--text-secondary);line-height:1.5;max-width:700px}
+
+/* ── FADE-IN ── */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.15s}
+.reveal-delay-2{transition-delay:.3s}
+.reveal-delay-3{transition-delay:.45s}
+.reveal-delay-4{transition-delay:.6s}
+
+/* ── HERO ── */
+#hero{background:var(--teal);color:var(--white);min-height:100vh;justify-content:center;position:relative;overflow:hidden}
+#hero::before{content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(ellipse,rgba(109,174,162,.15) 0%,transparent 70%);pointer-events:none}
+#hero .section-label{color:var(--gold)}
+#hero .section-title{font-size:clamp(2.5rem,5.5vw,4.5rem);color:var(--white);max-width:900px}
+#hero .section-subtitle{color:rgba(255,255,255,.75);max-width:650px;margin-bottom:40px}
+.hero-tag{display:inline-block;padding:6px 16px;background:var(--gold-20);border:1px solid rgba(246,183,37,.3);border-radius:20px;font-size:.85rem;font-weight:600;color:var(--gold);margin-bottom:24px}
+.hero-stats{display:flex;gap:48px;margin-top:48px;flex-wrap:wrap}
+.hero-stat{text-align:left}
+.hero-stat .num{font-size:clamp(2rem,4vw,3rem);font-weight:800;color:var(--gold)}
+.hero-stat .label{font-size:.85rem;color:rgba(255,255,255,.6);margin-top:4px}
+.scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);font-size:.8rem;color:rgba(255,255,255,.4);animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+/* ── PROBLEM ── */
+#problem{background:var(--white)}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:40px}
+.pain-card{background:var(--off-white);border:1px solid var(--teal-15);border-radius:16px;padding:32px;position:relative;overflow:hidden}
+.pain-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--coral)}
+.pain-card .pain-icon{font-size:2rem;margin-bottom:16px}
+.pain-card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+.pain-card p{font-size:.95rem;color:var(--text-secondary);line-height:1.55}
+.evidence-bar{margin-top:48px;padding:28px 32px;background:var(--teal-05);border-left:4px solid var(--mint);border-radius:0 12px 12px 0}
+.evidence-bar p{font-size:.95rem;color:var(--text-secondary);line-height:1.6}
+.evidence-bar strong{color:var(--teal)}
+
+/* ── THESIS ── */
+#thesis{background:var(--teal);color:var(--white)}
+#thesis .section-label{color:var(--gold)}
+.thesis-statement{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;line-height:1.3;max-width:800px;margin-bottom:48px}
+.thesis-statement em{color:var(--gold);font-style:normal}
+.thesis-model{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;margin-top:20px}
+@media(max-width:768px){.thesis-model{grid-template-columns:1fr;gap:24px}}
+.thesis-col{background:rgba(255,255,255,.08);border-radius:16px;padding:32px}
+.thesis-col h3{font-size:1.1rem;font-weight:700;margin-bottom:6px;color:var(--gold)}
+.thesis-col .role{font-size:.85rem;color:rgba(255,255,255,.5);margin-bottom:16px}
+.thesis-col p{font-size:.95rem;color:rgba(255,255,255,.8);line-height:1.5}
+.thesis-plus{font-size:2.5rem;font-weight:800;color:var(--gold);text-align:center;padding:0 24px}
+@media(max-width:768px){.thesis-plus{padding:0}}
+.thesis-result{margin-top:32px;padding:24px 32px;background:rgba(246,183,37,.12);border:1px solid rgba(246,183,37,.25);border-radius:12px;text-align:center;font-size:1.05rem;font-weight:600;color:var(--gold)}
+
+/* ── PERSONAS ── */
+#personas{background:var(--off-white)}
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:40px}
+.persona-card{background:var(--white);border-radius:16px;padding:36px;border:2px solid transparent;transition:all .3s;cursor:pointer;position:relative}
+.persona-card:hover{border-color:var(--mint);transform:translateY(-4px);box-shadow:0 12px 40px rgba(38,61,57,.1)}
+.persona-card.primary{border-color:var(--gold)}
+.persona-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.persona-badge.primary-badge{background:var(--gold-20);color:#8B6600}
+.persona-badge.secondary-badge{background:var(--mint-15);color:#3D7A6E}
+.persona-name{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.persona-role{font-size:.9rem;color:var(--text-light);margin-bottom:20px}
+.persona-jtbd{list-style:none;padding:0}
+.persona-jtbd li{font-size:.9rem;color:var(--text-secondary);padding:8px 0;border-bottom:1px solid var(--teal-05);line-height:1.45}
+.persona-jtbd li:last-child{border-bottom:none}
+.persona-jtbd li strong{color:var(--teal);font-weight:600}
+.persona-transform{margin-top:20px;padding:16px;background:var(--teal-05);border-radius:10px}
+.persona-transform .from{font-size:.8rem;color:var(--text-light);margin-bottom:6px}
+.persona-transform .to{font-size:.9rem;font-weight:600;color:var(--teal)}
+.persona-transform .arrow{display:inline-block;margin:4px 0;color:var(--mint);font-size:1.1rem}
+
+/* ── JOURNEY ── */
+#journey{background:var(--white)}
+.journey-track{margin-top:48px;position:relative}
+.journey-line{position:absolute;top:28px;left:24px;right:24px;height:3px;background:var(--teal-15);border-radius:2px}
+.journey-line-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--mint));border-radius:2px;width:0;transition:width 1s ease}
+.journey-stages{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+@media(max-width:900px){.journey-stages{grid-template-columns:1fr;gap:24px}.journey-line{display:none}}
+.stage-card{text-align:center;padding:0 16px;cursor:pointer}
+.stage-dot{width:56px;height:56px;border-radius:50%;background:var(--off-white);border:3px solid var(--teal-15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:var(--teal-40);margin:0 auto 20px;transition:all .4s;position:relative;z-index:2}
+.stage-card.active .stage-dot{background:var(--teal);border-color:var(--teal);color:var(--white);box-shadow:0 4px 20px rgba(38,61,57,.3)}
+.stage-card.completed .stage-dot{background:var(--mint);border-color:var(--mint);color:var(--white)}
+.stage-name{font-size:.95rem;font-weight:700;margin-bottom:6px;color:var(--teal)}
+.stage-summary{font-size:.82rem;color:var(--text-light);line-height:1.4}
+.stage-detail{margin-top:40px;display:none;animation:fadeIn .5s ease}
+.stage-detail.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stage-detail-inner{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:32px;background:var(--off-white);border-radius:16px;border:1px solid var(--teal-15)}
+@media(max-width:768px){.stage-detail-inner{grid-template-columns:1fr}}
+.stage-detail h3{font-size:1.25rem;font-weight:700;margin-bottom:12px}
+.stage-detail h4{font-size:.85rem;font-weight:700;color:var(--mint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.stage-detail p{font-size:.92rem;color:var(--text-secondary);line-height:1.55}
+.stage-earn{margin-top:16px;padding:16px;background:var(--gold-20);border-radius:10px}
+.stage-earn p{font-size:.85rem;font-weight:600;color:#8B6600}
+
+/* ── HOW IT WORKS ── */
+#flow{background:var(--teal);color:var(--white)}
+#flow .section-label{color:var(--gold)}
+.flow-diagram{margin-top:48px;display:flex;flex-direction:column;gap:0;align-items:center}
+.flow-row{display:flex;align-items:center;gap:16px;width:100%;max-width:800px}
+@media(max-width:768px){.flow-row{flex-direction:column}}
+.flow-node{flex:1;padding:20px 24px;border-radius:12px;text-align:center;font-size:.9rem;font-weight:600;position:relative}
+.flow-node.source{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.flow-node.agent{background:rgba(246,183,37,.15);color:var(--gold);border:1px solid rgba(246,183,37,.3)}
+.flow-node.channel{background:rgba(109,174,162,.15);color:var(--mint);border:1px solid rgba(109,174,162,.3)}
+.flow-node.supervisor{background:rgba(255,255,255,.12);color:var(--white);border:1px solid rgba(255,255,255,.2)}
+.flow-node.data{background:rgba(246,183,37,.2);color:var(--gold);border:1px solid rgba(246,183,37,.35);font-weight:700}
+.flow-node small{display:block;font-size:.75rem;font-weight:400;opacity:.7;margin-top:4px}
+.flow-arrow{text-align:center;padding:8px 0;color:var(--mint);font-size:1.4rem}
+.flow-branch{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;width:100%;max-width:900px;margin-top:4px}
+@media(max-width:768px){.flow-branch{grid-template-columns:1fr}}
+.flow-branch .flow-node{font-size:.82rem}
+
+/* ── MOAT ── */
+#moat{background:var(--off-white)}
+.tier-stack{margin-top:40px;display:flex;flex-direction:column;gap:12px;max-width:800px}
+.tier-row{display:grid;grid-template-columns:60px 1fr 140px;gap:16px;align-items:center;padding:16px 20px;border-radius:12px;transition:all .3s;cursor:default}
+@media(max-width:768px){.tier-row{grid-template-columns:50px 1fr;}.tier-value{display:none!important}}
+.tier-row:hover{transform:translateX(4px)}
+.tier-num{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:var(--white)}
+.tier-row.t1{background:rgba(38,61,57,.08)}.tier-row.t1 .tier-num{background:var(--teal)}
+.tier-row.t2{background:rgba(38,61,57,.06)}.tier-row.t2 .tier-num{background:#3D6B5E}
+.tier-row.t3{background:rgba(109,174,162,.1)}.tier-row.t3 .tier-num{background:var(--mint)}
+.tier-row.t4{background:rgba(109,174,162,.07)}.tier-row.t4 .tier-num{background:#8CBFB5}
+.tier-row.t5{background:rgba(38,61,57,.04)}.tier-row.t5 .tier-num{background:var(--teal-40)}
+.tier-row.t6{background:rgba(38,61,57,.02)}.tier-row.t6 .tier-num{background:var(--teal-15);color:var(--teal)}
+.tier-info h4{font-size:.95rem;font-weight:700;margin-bottom:2px}
+.tier-info p{font-size:.82rem;color:var(--text-light)}
+.tier-value{font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;text-align:center}
+.tier-row.t1 .tier-value,.tier-row.t2 .tier-value{background:var(--gold-20);color:#8B6600}
+.tier-row.t3 .tier-value{background:var(--mint-15);color:#3D7A6E}
+.tier-row.t4 .tier-value{background:var(--teal-05);color:var(--text-light)}
+.tier-row.t5 .tier-value,.tier-row.t6 .tier-value{background:var(--teal-05);color:var(--text-light)}
+.moat-callout{margin-top:40px;padding:28px 32px;background:var(--white);border:2px solid var(--gold);border-radius:16px}
+.moat-callout h3{font-size:1.1rem;font-weight:700;color:var(--teal);margin-bottom:8px}
+.moat-callout p{font-size:.95rem;color:var(--text-secondary);line-height:1.55}
+
+/* ── EVIDENCE ── */
+#evidence{background:var(--white)}
+.evidence-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:40px}
+.evidence-card{padding:28px;border-radius:16px;border:1px solid var(--teal-15)}
+.evidence-card .ev-type{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.evidence-card .ev-stat{font-size:clamp(1.8rem,3vw,2.5rem);font-weight:800;color:var(--teal);margin-bottom:8px}
+.evidence-card .ev-desc{font-size:.9rem;color:var(--text-secondary);line-height:1.5}
+.evidence-card.customer{background:var(--gold-20);border-color:rgba(246,183,37,.3)}
+.evidence-card.customer .ev-type{color:#8B6600}
+.evidence-card.uxr{background:var(--mint-15);border-color:rgba(109,174,162,.3)}
+.evidence-card.uxr .ev-type{color:#3D7A6E}
+.evidence-card.eap{background:var(--teal-05)}
+.evidence-card.eap .ev-type{color:var(--teal)}
+.evidence-card.legal{background:#FFF5F5;border-color:rgba(191,75,8,.2)}
+.evidence-card.legal .ev-type{color:var(--orange)}
+
+/* ── ROADMAP ── */
+#roadmap{background:var(--off-white)}
+.roadmap-timeline{margin-top:48px;position:relative;padding-left:32px}
+.roadmap-timeline::before{content:'';position:absolute;top:0;bottom:0;left:13px;width:3px;background:var(--teal-15);border-radius:2px}
+.roadmap-item{position:relative;padding-bottom:40px}
+.roadmap-item:last-child{padding-bottom:0}
+.roadmap-dot{position:absolute;left:-25px;top:4px;width:14px;height:14px;border-radius:50%;border:3px solid var(--teal-15);background:var(--white)}
+.roadmap-item.now .roadmap-dot{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px var(--gold-20)}
+.roadmap-item.next .roadmap-dot{background:var(--mint);border-color:var(--mint)}
+.roadmap-time{font-size:.8rem;font-weight:700;color:var(--text-light);margin-bottom:4px}
+.roadmap-name{font-size:1.15rem;font-weight:700;margin-bottom:6px}
+.roadmap-desc{font-size:.9rem;color:var(--text-secondary);line-height:1.5}
+.roadmap-gate{margin-top:8px;padding:8px 14px;background:var(--teal-05);border-radius:8px;font-size:.8rem;color:var(--text-light);display:inline-block}
+.roadmap-gate strong{color:var(--teal)}
+
+/* ── CURRENT STATE ── */
+#current{background:var(--white)}
+.gap-table{margin-top:40px;width:100%;border-collapse:separate;border-spacing:0;font-size:.88rem}
+.gap-table thead th{text-align:left;padding:12px 16px;background:var(--teal);color:var(--white);font-weight:600;font-size:.8rem;letter-spacing:.05em}
+.gap-table thead th:first-child{border-radius:12px 0 0 0}
+.gap-table thead th:last-child{border-radius:0 12px 0 0}
+.gap-table tbody td{padding:12px 16px;border-bottom:1px solid var(--teal-05);vertical-align:top}
+.gap-table tbody tr:last-child td{border-bottom:none}
+.gap-table .status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.status.done{background:#E8F5E9;color:#2E7D32}
+.status.progress{background:var(--gold-20);color:#8B6600}
+.status.not-built{background:#FFEBEE;color:#C62828}
+.status.deferred{background:var(--teal-05);color:var(--text-light)}
+
+/* ── RESPONSIVE GRID OVERRIDES ── */
+@media(max-width:768px){
+  #handoff [style*="grid-template-columns: 1fr 1fr"],
+  #handoff [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important}
+  #handoff [style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr !important}
+}
+
+/* ── FOOTER ── */
+footer{padding:40px;text-align:center;background:var(--teal);color:rgba(255,255,255,.5);font-size:.8rem}
+footer strong{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav id="topnav">
+  <div class="nav-logo">Team<span>Sense</span></div>
+  <div class="nav-links">
+    <a href="#hero">Vision</a>
+    <a href="#problem">Problem</a>
+    <a href="#thesis">Thesis</a>
+    <a href="#personas">Personas</a>
+    <a href="#journey">Journey</a>
+    <a href="#handoff">Handoff</a>
+    <a href="#skills">Skills</a>
+    <a href="#flow">How It Works</a>
+    <a href="#moat">Moat</a>
+    <a href="#evidence">Evidence</a>
+    <a href="#roadmap">Roadmap</a>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section id="hero">
+  <div class="inner">
+    <div class="hero-tag reveal">Product Vision · 2026</div>
+    <h1 class="section-title reveal reveal-delay-1">Supervisor Attendance<br>Control Surface</h1>
+    <p class="section-subtitle reveal reveal-delay-2">From shift-start chaos to confirmed operational truth — an AI-powered conversational layer that transforms how frontline supervisors manage attendance, coverage, and accountability.</p>
+    <div class="hero-stats reveal reveal-delay-3">
+      <div class="hero-stat"><div class="num">4</div><div class="label">Progressive stages</div></div>
+      <div class="hero-stat"><div class="num">6</div><div class="label">Data quality tiers</div></div>
+      <div class="hero-stat"><div class="num">3</div><div class="label">Personas served</div></div>
+      <div class="hero-stat"><div class="num">Q2 '26</div><div class="label">MVP target</div></div>
+    </div>
+  </div>
+  <div class="scroll-hint">Scroll to explore ↓</div>
+</section>
+
+<!-- ═══════════ PROBLEM ═══════════ -->
+<section id="problem">
+  <div class="inner">
+    <div class="section-label reveal">The Problem</div>
+    <h2 class="section-title reveal reveal-delay-1">"Who is here, who is missing,<br>and what should I do about it?"</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Every shift start, frontline supervisors face the same unanswered question. No system gives them a single, trusted answer.</p>
+
+    <div class="pain-grid">
+      <div class="pain-card reveal reveal-delay-1">
+        <div class="pain-icon">⏱</div>
+        <h3>15–30 minutes wasted</h3>
+        <p>Supervisors manually cross-reference time clocks, HRIS dashboards, call-off logs, and tribal knowledge — every single shift.</p>
+      </div>
+      <div class="pain-card reveal reveal-delay-2">
+        <div class="pain-icon">🔍</div>
+        <h3>Invisible decisions</h3>
+        <p>Attendance judgments exist only in the supervisor's head. No structured record. No audit trail. No data asset created.</p>
+      </div>
+      <div class="pain-card reveal reveal-delay-3">
+        <div class="pain-icon">⚖️</div>
+        <h3>Legal exposure</h3>
+        <p>Auto-assigned attendance points without supervisor confirmation have led to $1M–$20M EEOC settlements. The compliance risk is real.</p>
+      </div>
+    </div>
+
+    <div class="evidence-bar reveal reveal-delay-4">
+      <p><strong>This is not a reporting gap — it's a data creation gap.</strong> Systems that record attendance capture what happened after the fact. No system captures the supervisor's real-time judgment: confirming who is actually absent, distinguishing a late arrival from a NCNS, or validating that a points assignment is accurate and legally defensible.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ THESIS ═══════════ -->
+<section id="thesis">
+  <div class="inner">
+    <div class="section-label reveal">The Thesis</div>
+    <h2 class="section-title reveal reveal-delay-1" style="color:var(--white)">Data Birthright</h2>
+    <div class="thesis-statement reveal reveal-delay-2">
+      <em>"Operational truth is created, not reported."</em><br>
+      The agentic model reframes how confirmed attendance data is earned — not through dashboards, but through conversation.
+    </div>
+
+    <div class="thesis-model reveal reveal-delay-3">
+      <div class="thesis-col">
+        <h3>Agent</h3>
+        <div class="role">Creates breadth</div>
+        <p>Processes every attendance signal on every shift — matching punches to schedules, detecting anomalies, calculating confidence. Handles the 70% of cases that are unambiguous. Ensures no employee is missed.</p>
+      </div>
+      <div class="thesis-plus">+</div>
+      <div class="thesis-col">
+        <h3>Supervisor</h3>
+        <div class="role">Creates depth</div>
+        <p>Engages only where human judgment matters — the 30% of ambiguous cases. Confirms NCNS, distinguishes late arrivals, validates the agent's work. Creates the highest-value data asset: human-validated attendance truth.</p>
+      </div>
+    </div>
+    <div class="thesis-result reveal reveal-delay-4">
+      Together, agent + supervisor produce better data than either alone. The agent ensures every employee is processed. The supervisor ensures the hardest cases are right.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PERSONAS ═══════════ -->
+<section id="personas">
+  <div class="inner">
+    <div class="section-label reveal">The People</div>
+    <h2 class="section-title reveal reveal-delay-1">Three personas, one data flow</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Each persona creates or consumes a different layer of the attendance truth. Their needs are distinct but their data is connected.</p>
+
+    <div class="persona-grid">
+      <div class="persona-card primary reveal reveal-delay-1">
+        <span class="persona-badge primary-badge">Primary</span>
+        <div class="persona-name">Supervisor Sal</div>
+        <div class="persona-role">Frontline Supervisor</div>
+        <ul class="persona-jtbd">
+          <li><strong>"Start the shift without chaos"</strong> — Know who's here and who's missing within 30 seconds</li>
+          <li><strong>"Fill the gaps before they hurt production"</strong> — When someone is missing, take immediate action</li>
+          <li><strong>"Make fast, defensible decisions"</strong> — Distinguish NCNS from late arrival so the right record is created</li>
+        </ul>
+        <div class="persona-transform">
+          <div class="from">Today: 15–30 min cross-referencing 3–4 systems</div>
+          <div class="arrow">↓</div>
+          <div class="to">Vision: 2-minute AI conversation that feels like texting a knowledgeable colleague</div>
+        </div>
+      </div>
+
+      <div class="persona-card reveal reveal-delay-2">
+        <span class="persona-badge secondary-badge">Secondary</span>
+        <div class="persona-name">Employee Eva</div>
+        <div class="persona-role">Frontline Employee</div>
+        <ul class="persona-jtbd">
+          <li><strong>"Know where I stand"</strong> — See current points balance before calling off</li>
+          <li><strong>"Trust the system is fair"</strong> — Points applied consistently with protected absences excluded</li>
+          <li><strong>"Not get surprised by discipline"</strong> — Advance warning before thresholds</li>
+        </ul>
+        <div class="persona-transform">
+          <div class="from">Today: Must ask HR Gina for points balance (30+ daily calls)</div>
+          <div class="arrow">↓</div>
+          <div class="to">Vision: Texts "What are my points?" and gets an instant, contextual answer</div>
+        </div>
+      </div>
+
+      <div class="persona-card reveal reveal-delay-3">
+        <span class="persona-badge secondary-badge">Secondary</span>
+        <div class="persona-name">HR Gina</div>
+        <div class="persona-role">Site HR Generalist</div>
+        <ul class="persona-jtbd">
+          <li><strong>"Stop answering the same question 30x/day"</strong> — Employee self-service for balances</li>
+          <li><strong>"Ensure FMLA/ADA compliance"</strong> — Protected absences never accrue points</li>
+          <li><strong>"Audit before termination"</strong> — Traceability to confirmed events with quality tiers</li>
+        </ul>
+        <div class="persona-transform">
+          <div class="from">Today: Manually fields 30+ daily points inquiries, no confirmation audit trail</div>
+          <div class="arrow">↓</div>
+          <div class="to">Vision: Daily digest email with cross-shift attendance rollup, confirmation quality audit, and compliance-ready reports</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ JOURNEY ═══════════ -->
+<section id="journey">
+  <div class="inner">
+    <div class="section-label reveal">The Journey</div>
+    <h2 class="section-title reveal reveal-delay-1">Four stages, each earning the next</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Every stage proves trust, generates data, and delivers operational value before unlocking the next.</p>
+
+    <div class="journey-track reveal reveal-delay-3">
+      <div class="journey-line"><div class="journey-line-fill" id="journeyFill"></div></div>
+      <div class="journey-stages">
+        <div class="stage-card active" data-stage="1" onclick="setStage(1)">
+          <div class="stage-dot">1</div>
+          <div class="stage-name">Shift Start Confirmation</div>
+          <div class="stage-summary">Daily habit. Confirmed data.</div>
+        </div>
+        <div class="stage-card" data-stage="2" onclick="setStage(2)">
+          <div class="stage-dot">2</div>
+          <div class="stage-name">Intelligent Recommendations</div>
+          <div class="stage-summary">Ranked coverage candidates.</div>
+        </div>
+        <div class="stage-card" data-stage="3" onclick="setStage(3)">
+          <div class="stage-dot">3</div>
+          <div class="stage-name">Automated Backfill</div>
+          <div class="stage-summary">System acts, supervisor approves.</div>
+        </div>
+        <div class="stage-card" data-stage="4" onclick="setStage(4)">
+          <div class="stage-dot">4</div>
+          <div class="stage-name">Predictive Intelligence</div>
+          <div class="stage-summary">See problems before they happen.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage Details -->
+    <div class="stage-detail active" id="stage-1">
+      <div class="stage-detail-inner">
+        <div>
+          <h4>What Sal experiences</h4>
+          <h3>An AI conversation, not a dashboard</h3>
+          <p>Receives an AI-composed SMS shift summary with individual employee names at shift start. The agent adapts the message based on what's happening — a clean shift reads differently from a shift with 3 NCNS. Sal replies in natural language to confirm, correct, or ask questions. When confirming a gap, Sal tells the agent to find coverage or says they'll handle it internally.</p>
+          <p style="margin-top:12px;font-weight:600;color:var(--teal)">Total interaction: ~2 minutes.</p>
+        </div>
+        <div>
+          <h4>What TeamSense earns</h4>
+          <div class="stage-earn"><p>Daily supervisor habit — the hardest thing to create and the most defensible once earned.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Confirmed attendance data with quality tiers — this data doesn't exist in any HRIS.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Trust baseline — supervisors begin to trust the agent's categorization accuracy.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Coverage and adaptation data — the learning signal for Stages 2–4.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-detail" id="stage-2">
+      <div class="stage-detail-inner">
+        <div>
+          <h4>What Sal experiences</h4>
+          <h3>Ranked candidates, one-tap approval</h3>
+          <p>After confirming a gap, Sal receives a ranked list of coverage candidates — filtered by availability, skills, seniority rules, and historical acceptance patterns. Each candidate card explains <em>why</em> they're ranked here. Sal approves, reorders, or modifies before any outreach happens.</p>
+          <p style="margin-top:12px"><strong>This requires the Skills Matrix</strong> — the canonical record of who can do what. Skills data doesn't live in any HRIS. TeamSense builds it through AI ingestion of messy spreadsheets, frontline self-reporting, and supervisor correction during coverage assignments. <a href="#skills" style="color:var(--gold)">(See how →)</a></p>
+        </div>
+        <div>
+          <h4>What TeamSense earns</h4>
+          <div class="stage-earn"><p>Eligibility data — validated skills matching and seniority rules per customer.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Acceptance patterns — which employees accept by shift type, day, and time.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Recommendation accuracy — how often supervisors accept vs. modify suggestions.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-detail" id="stage-3">
+      <div class="stage-detail-inner">
+        <div>
+          <h4>What Sal experiences</h4>
+          <h3>System handles it, Sal just approves</h3>
+          <p>The system detects a gap, auto-generates a recommendation, and presents it for supervisor approval. Sal approves with one tap and the system executes — sending outreach, monitoring acceptance, and confirming coverage. The supervisor stays in control but doesn't do the work.</p>
+        </div>
+        <div>
+          <h4>What TeamSense earns</h4>
+          <div class="stage-earn"><p>Automation trust — the supervisor trusts the system enough to approve rather than override.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Coverage speed metrics — quantifiable ROI (time-to-coverage improvement).</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Category-defining proof — "TeamSense handles my staffing" becomes the customer narrative.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-detail" id="stage-4">
+      <div class="stage-detail-inner">
+        <div>
+          <h4>What Sal experiences</h4>
+          <h3>Problems surfaced before they happen</h3>
+          <p>The system surfaces proactive alerts: "3 likely absences on Tuesday Line A based on historical patterns." Sal pre-positions coverage <em>before</em> shift start. The scramble is eliminated. Staffing decisions shift from reactive to proactive.</p>
+        </div>
+        <div>
+          <h4>What TeamSense earns</h4>
+          <div class="stage-earn"><p>Predictive accuracy — validated absence forecasting from confirmed historical data.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Labor cost optimization — quantifiable savings from proactive staffing.</p></div>
+          <div class="stage-earn" style="margin-top:12px"><p>Category proof — TeamSense is the operational intelligence layer for frontline workforce management.</p></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ SHIFT HANDOFF ═══════════ -->
+<section id="handoff" style="background:var(--white)">
+  <div class="inner">
+    <div class="section-label reveal">Cross-Cutting Opportunity</div>
+    <h2 class="section-title reveal reveal-delay-1">The 15-minute window<br>nobody is capturing</h2>
+    <p class="section-subtitle reveal reveal-delay-2">During shift changes, outgoing and incoming supervisors overlap for roughly 15 minutes. This is the most information-rich moment of the day — and today it's entirely verbal, unstructured, and lost.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:40px">
+      <div class="reveal reveal-delay-2">
+        <div style="padding:28px;background:var(--off-white);border-radius:16px;border:1px solid var(--teal-15);height:100%">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:12px">Today</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:12px">Verbal handoff, nothing captured</h3>
+          <p style="font-size:.92rem;color:var(--text-secondary);line-height:1.55;margin-bottom:12px">The outgoing supervisor walks the incoming supervisor through what happened — who left early, which machine had issues, who's on light duty, what coverage decisions were made. It happens in a hallway conversation or quick walkthrough.</p>
+          <p style="font-size:.92rem;color:var(--text-secondary);line-height:1.55">The incoming supervisor absorbs what they can, forgets half of it, and starts their own triage from scratch. No record. No structured data. Critical operational context evaporates between shifts.</p>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-3">
+        <div style="padding:28px;background:var(--teal);border-radius:16px;color:var(--white);height:100%">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">With TeamSense</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:12px">Structured handoff, data captured</h3>
+          <p style="font-size:.92rem;color:rgba(255,255,255,.8);line-height:1.55;margin-bottom:12px">TeamSense composes a <strong>shift handoff summary</strong> for the outgoing supervisor: "Here's what happened on your shift — confirm or correct before you go." The outgoing supervisor reviews and validates — adding context the system can't see ("Kevin left early but he'll be back tomorrow," "Machine 3 was down for 20 min").</p>
+          <p style="font-size:.92rem;color:rgba(255,255,255,.8);line-height:1.55;margin-bottom:12px">The incoming supervisor receives a <strong>structured incoming brief</strong>: confirmed attendance outcomes, operational decisions, contextual notes from the outgoing supervisor — before they even walk onto the floor.</p>
+          <p style="font-size:.92rem;color:rgba(255,255,255,.65);line-height:1.55;font-style:italic">"That first 15 minutes before or after the shift is the most critical time — that's when supervisors need the right information to manage employees and costs."</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px">
+      <div class="reveal reveal-delay-1" style="padding:20px 24px;background:var(--gold-20);border-radius:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--teal);margin-bottom:4px">Continuity</div>
+        <p style="font-size:.85rem;color:var(--text-secondary)">Operational context carries across shift boundaries instead of being lost</p>
+      </div>
+      <div class="reveal reveal-delay-2" style="padding:20px 24px;background:var(--mint-15);border-radius:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--teal);margin-bottom:4px">Data</div>
+        <p style="font-size:.85rem;color:var(--text-secondary)">Handoff decisions become structured records — feeding TIP analytics and predictive models</p>
+      </div>
+      <div class="reveal reveal-delay-3" style="padding:20px 24px;background:var(--teal-05);border-radius:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--teal);margin-bottom:4px">Habit</div>
+        <p style="font-size:.85rem;color:var(--text-secondary)">Extends the daily conversation from shift start to shift end — two touchpoints, not one</p>
+      </div>
+    </div>
+
+    <div class="evidence-bar reveal reveal-delay-4" style="margin-top:32px">
+      <p><strong>Strategic value:</strong> Shift handoff turns TeamSense from a shift-start tool into a shift-lifecycle tool. The outgoing supervisor's confirmation closes the loop on their shift. The incoming supervisor's brief eliminates their own cold-start triage. Every handoff creates a structured record that was previously invisible — feeding operational intelligence, trend analysis, and cross-shift continuity that no HRIS captures.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SKILLS MATRIX ═══════════ -->
+<section id="skills" style="background:var(--off-white)">
+  <div class="inner">
+    <div class="section-label reveal">Prerequisite for Stage 2</div>
+    <h2 class="section-title reveal reveal-delay-1">Building the Skills Matrix<br>from the ground up</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Skills data doesn't live in any HRIS. It lives in messy spreadsheets, supervisors' heads, and employees' own knowledge. No integration can solve this — we have to build the data layer ourselves.</p>
+
+    <div style="margin-top:40px">
+      <!-- The Challenge -->
+      <div class="reveal" style="padding:24px 28px;background:var(--white);border:1px solid var(--teal-15);border-radius:16px;margin-bottom:24px">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:10px">The challenge</div>
+        <p style="font-size:1rem;color:var(--text-secondary);line-height:1.6">Every manufacturing plant has some version of a skills matrix — often a spreadsheet on a shared drive, maintained by one person, updated inconsistently. Column names vary. Formats are messy. Certifications expire. New employees get added late. The data exists, but it's trapped in formats no system can reliably consume. And the people who know the real skills — supervisors and employees themselves — have no way to contribute or correct.</p>
+      </div>
+
+      <!-- The approach -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+        <div class="reveal reveal-delay-1" style="padding:28px;background:var(--white);border-radius:16px;border:2px solid var(--gold);position:relative">
+          <div style="position:absolute;top:-14px;left:20px;background:var(--gold);color:var(--white);padding:4px 14px;border-radius:20px;font-size:.72rem;font-weight:700">STEP 1</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin:8px 0 10px">AI ingestion of messy data</h3>
+          <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">Customer uploads their existing spreadsheet — whatever format it's in. AI reads, extracts, normalizes, and maps skills to a canonical matrix. Handles inconsistent column names, merged cells, abbreviations, and mixed formats.</p>
+          <div style="padding:12px;background:var(--teal-05);border-radius:8px;font-size:.82rem;color:var(--text-light)">Similar to the AI-powered policy import in Layer 7 — upload a messy document, get structured data back.</div>
+        </div>
+
+        <div class="reveal reveal-delay-2" style="padding:28px;background:var(--white);border-radius:16px;border:2px solid var(--mint);position:relative">
+          <div style="position:absolute;top:-14px;left:20px;background:var(--mint);color:var(--white);padding:4px 14px;border-radius:20px;font-size:.72rem;font-weight:700">STEP 2</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin:8px 0 10px">Frontline self-reporting</h3>
+          <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">Employees report and correct their own skills via SMS conversation. "What machines can you operate?" "Do you have your forklift cert?" Natural language — the same conversational model as the attendance experience.</p>
+          <div style="padding:12px;background:var(--teal-05);border-radius:8px;font-size:.82rem;color:var(--text-light)">Employees know their own skills best. Give them a channel to contribute — and the data gets better over time.</div>
+        </div>
+
+        <div class="reveal reveal-delay-3" style="padding:28px;background:var(--white);border-radius:16px;border:2px solid var(--teal);position:relative">
+          <div style="position:absolute;top:-14px;left:20px;background:var(--teal);color:var(--white);padding:4px 14px;border-radius:20px;font-size:.72rem;font-weight:700">STEP 3</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin:8px 0 10px">Supervisor validation & correction</h3>
+          <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">Supervisors validate skills as they make coverage assignments. When Sal picks Lisa to cover Line A, the system learns Lisa is capable on Line A. When Sal overrides a recommendation, the system learns what the matrix got wrong.</p>
+          <div style="padding:12px;background:var(--teal-05);border-radius:8px;font-size:.82rem;color:var(--text-light)">Every coverage decision is implicit skills validation. The matrix improves passively from operational use.</div>
+        </div>
+      </div>
+
+      <!-- The flywheel -->
+      <div class="reveal reveal-delay-4" style="margin-top:28px;padding:28px 32px;background:var(--teal);border-radius:16px;color:var(--white)">
+        <h3 style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:12px">The Skills Flywheel</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px">
+          <div>
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">Day 1</div>
+            <p style="font-size:.85rem;color:rgba(255,255,255,.7)">AI ingests the customer's existing spreadsheet. Imperfect but functional. Coverage recommendations are availability-only.</p>
+          </div>
+          <div>
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">Week 2</div>
+            <p style="font-size:.85rem;color:rgba(255,255,255,.7)">Employees have self-reported. Supervisors have made coverage decisions. Matrix is filling in. Recommendations start including skills.</p>
+          </div>
+          <div>
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">Month 3</div>
+            <p style="font-size:.85rem;color:rgba(255,255,255,.7)">Matrix is operational-quality. Coverage recommendations are ranked by skills + seniority + acceptance patterns. Supervisors trust the suggestions.</p>
+          </div>
+          <div>
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">Ongoing</div>
+            <p style="font-size:.85rem;color:rgba(255,255,255,.7)">Every coverage assignment, every correction, every new cert — the matrix gets better. It becomes the canonical skills record that no other system has.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="evidence-bar reveal" style="margin-top:24px">
+        <p><strong>Why this matters:</strong> Without a skills matrix, Stage 2 recommendations are "here's who's available." With a skills matrix, they become "here's who's available <em>and qualified</em>." That's the difference between a text blast and an intelligent staffing system. And because the data is built through use — not through a one-time import — it stays current in a way that static spreadsheets never do.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section id="flow">
+  <div class="inner">
+    <div class="section-label reveal">How It Works</div>
+    <h2 class="section-title reveal reveal-delay-1" style="color:var(--white)">Data flows from raw signal to confirmed truth</h2>
+    <p class="section-subtitle reveal reveal-delay-2" style="color:rgba(255,255,255,.65)">The agent sits between the HRIS and the supervisor, processing routine signals and surfacing only what needs human judgment.</p>
+
+    <div class="flow-diagram reveal reveal-delay-3">
+      <div class="flow-row">
+        <div class="flow-node source">HRIS / T&A Systems<small>UKG, Workday, ADP</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-node source">TEDS<small>Canonical employee data, punches, schedules</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-node agent">Agent Automation Layer<small>Signal processing · Confidence scoring · Auto-confirm ≥95% · Route exceptions</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-node channel">SMS-First with LLM Intelligence<small>Agent-composed messages · Natural language replies · LLM intent parsing</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-node supervisor">Supervisor Conversation<small>Reviews summary · Confirms or corrects · Triggers coverage or adapts</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <div class="flow-node data">Confirmed Attendance Record in TEDS<small>Quality tier · Full audit trail · Legally defensible</small></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-node source">Operational Awareness<small>Shift summary, conversation</small></div>
+        <div class="flow-node agent" style="font-size:.82rem">Digest Surface<small>Supervisor shift digest (SMS) · HR daily digest (email)</small></div>
+        <div class="flow-node source">Coverage Orchestration<small>Outreach, recommendations</small></div>
+        <div class="flow-node source">Attendance Accountability<small>Points, self-service, audit</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ MOAT ═══════════ -->
+<section id="moat">
+  <div class="inner">
+    <div class="section-label reveal">The Competitive Moat</div>
+    <h2 class="section-title reveal reveal-delay-1">Six tiers of data quality<br>that no HRIS can replicate</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Every attendance event is stored with a quality tier that captures how it was confirmed. Higher tiers are more legally defensible and more competitively valuable.</p>
+
+    <div class="tier-stack reveal reveal-delay-3">
+      <div class="tier-row t1">
+        <div class="tier-num">1</div>
+        <div class="tier-info"><h4>Actively Corrected</h4><p>Supervisor reclassified a status the agent got wrong</p></div>
+        <div class="tier-value">Highest value</div>
+      </div>
+      <div class="tier-row t2">
+        <div class="tier-num">2</div>
+        <div class="tier-info"><h4>Confirmed + Acted</h4><p>Supervisor confirmed a gap AND triggered coverage</p></div>
+        <div class="tier-value">High value</div>
+      </div>
+      <div class="tier-row t3">
+        <div class="tier-num">3</div>
+        <div class="tier-info"><h4>Adapted Shift</h4><p>Supervisor confirmed absence, chose internal adaptation</p></div>
+        <div class="tier-value">High value</div>
+      </div>
+      <div class="tier-row t4">
+        <div class="tier-num">4</div>
+        <div class="tier-info"><h4>Agent-Confirmed, Reviewed</h4><p>Agent auto-confirmed; supervisor saw it and didn't override</p></div>
+        <div class="tier-value">Moderate</div>
+      </div>
+      <div class="tier-row t5">
+        <div class="tier-num">5</div>
+        <div class="tier-info"><h4>Agent-Confirmed, No Review</h4><p>Agent auto-confirmed; supervisor didn't engage</p></div>
+        <div class="tier-value">Limited</div>
+      </div>
+      <div class="tier-row t6">
+        <div class="tier-num">6</div>
+        <div class="tier-info"><h4>Unconfirmed</h4><p>Neither agent nor supervisor determined status</p></div>
+        <div class="tier-value">Commodity</div>
+      </div>
+    </div>
+
+    <div class="moat-callout reveal reveal-delay-4">
+      <h3>Why this matters for defensibility</h3>
+      <p>Tiers 1–3 represent data that <strong>does not exist in any HRIS</strong>. A supervisor-confirmed NCNS carries different legal weight than an auto-assigned absence. This is what makes TeamSense points defensible in a termination proceeding — and what no commodity workforce system can replicate. The more confirmed data we accumulate, the wider the moat becomes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ EVIDENCE ═══════════ -->
+<section id="evidence">
+  <div class="inner">
+    <div class="section-label reveal">The Evidence</div>
+    <h2 class="section-title reveal reveal-delay-1">Built on real signals, not assumptions</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Customer demand, UXR insights, EAP learnings, and legal precedent all point to the same opportunity.</p>
+
+    <div class="evidence-grid">
+      <div class="evidence-card customer reveal reveal-delay-1">
+        <div class="ev-type">Customer Demand</div>
+        <div class="ev-stat">6 customers</div>
+        <div class="ev-desc">Explicitly requesting TeamSense own the points calculation — not just surface HRIS points. MAGNA allocating $30K. Trilogy Spa: "$10K for this setup."</div>
+      </div>
+      <div class="evidence-card uxr reveal reveal-delay-2">
+        <div class="ev-type">UXR Insight</div>
+        <div class="ev-stat">#1 pain point</div>
+        <div class="ev-desc">Day-of absences are the top pain point in Q3 2025 research. Supervisors need WHO is missing, not just counts.</div>
+      </div>
+      <div class="evidence-card eap reveal reveal-delay-3">
+        <div class="ev-type">EAP Learning</div>
+        <div class="ev-stat">75+ days</div>
+        <div class="ev-desc">AZEK EAP confirmed the notification pipeline works — but counts-only messages without confirmation don't meet the bar for operational trust.</div>
+      </div>
+      <div class="evidence-card legal reveal reveal-delay-4">
+        <div class="ev-type">Legal Precedent</div>
+        <div class="ev-stat">$1M–$20M</div>
+        <div class="ev-desc">EEOC settlements against companies using auto-assigned attendance points without supervisor confirmation (Verizon 2011, Mueller Industries 2018).</div>
+      </div>
+      <div class="evidence-card customer reveal reveal-delay-1">
+        <div class="ev-type">Positioning Lesson</div>
+        <div class="ev-stat">MedAire</div>
+        <div class="ev-desc">Expected TeamSense to BE the points source of truth. Felt misled by the integration-only experience. When we ship, we must own the calculation.</div>
+      </div>
+      <div class="evidence-card uxr reveal reveal-delay-2">
+        <div class="ev-type">Proven Impact</div>
+        <div class="ev-stat">39% reduction</div>
+        <div class="ev-desc">Points self-service alone drives a proven 39% reduction in absenteeism. 6 of 7 deep-dive customers want live points balances.</div>
+      </div>
+      <div class="evidence-card customer reveal reveal-delay-3">
+        <div class="ev-type">Customer Result</div>
+        <div class="ev-stat">40% reduction</div>
+        <div class="ev-desc">Kenco achieved a 40% reduction in absenteeism after deploying TeamSense — validating the shift-start engagement model.</div>
+      </div>
+      <div class="evidence-card customer reveal reveal-delay-4">
+        <div class="ev-type">Customer Result</div>
+        <div class="ev-stat">70% NCNS reduction</div>
+        <div class="ev-desc">Magna reduced no-call/no-shows by 70% — demonstrating that visibility into absences changes supervisor and employee behavior.</div>
+      </div>
+      <div class="evidence-card uxr reveal reveal-delay-1">
+        <div class="ev-type">Customer Result</div>
+        <div class="ev-stat">10–12 hrs/wk saved</div>
+        <div class="ev-desc">Pella saves 10–12 hours per week in HR administrative time — the kind of operational efficiency that drives expansion and retention.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ROADMAP ═══════════ -->
+<section id="roadmap">
+  <div class="inner">
+    <div class="section-label reveal">The Roadmap</div>
+    <h2 class="section-title reveal reveal-delay-1">Delivery sequence</h2>
+    <p class="section-subtitle reveal reveal-delay-2">Each milestone earns the right to the next. Gates are real — we don't advance until the data proves readiness.</p>
+
+    <div class="roadmap-timeline reveal reveal-delay-3">
+      <div class="roadmap-item now">
+        <div class="roadmap-dot"></div>
+        <div class="roadmap-time">Q2 2026</div>
+        <div class="roadmap-name">Stage 1: Shift Start Confirmation (MVP)</div>
+        <div class="roadmap-desc">SMS shift start with names, AI-powered confirmation conversation, simple coverage trigger, adaptation logging, supervisor shift digest (SMS), and HR daily digest (email).</div>
+        <div class="roadmap-gate"><strong>Gate:</strong> ≥80% engagement · ≥85% trust · ≥70% auto-confirm</div>
+      </div>
+      <div class="roadmap-item next">
+        <div class="roadmap-dot"></div>
+        <div class="roadmap-time">Q2–Q3 2026</div>
+        <div class="roadmap-name">Points Engine</div>
+        <div class="roadmap-desc">Configurable points calculation, conversational employee self-service, threshold alerts, protected absence exclusion.</div>
+        <div class="roadmap-gate"><strong>Gate:</strong> ≥90% self-service · 100% FMLA/ADA exclusion</div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"></div>
+        <div class="roadmap-time">Q3 2026</div>
+        <div class="roadmap-name">Stage 2: Intelligent Coverage Recommendations</div>
+        <div class="roadmap-desc">Ranked candidates with eligibility, skills, seniority. Supervisor reviews and approves before outreach.</div>
+        <div class="roadmap-gate"><strong>Gate:</strong> ≥70% recommendation acceptance · ≥3 pilot customers</div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"></div>
+        <div class="roadmap-time">Q4 2026</div>
+        <div class="roadmap-name">Stage 3: Supervisor-Approved Automated Backfill</div>
+        <div class="roadmap-desc">System detects gap → auto-generates recommendation → supervisor approves → system executes.</div>
+        <div class="roadmap-gate"><strong>Gate:</strong> WTP confirmed · Multi-plant expansion</div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"></div>
+        <div class="roadmap-time">2027</div>
+        <div class="roadmap-name">Stage 4: Predictive Staffing Intelligence</div>
+        <div class="roadmap-desc">Proactive alerts, absence forecasting, pre-positioned coverage. Requires sufficient outcome data history.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CURRENT STATE ═══════════ -->
+<section id="current">
+  <div class="inner">
+    <div class="section-label reveal">Where We Are Today</div>
+    <h2 class="section-title reveal reveal-delay-1">Honest assessment: February 2026</h2>
+    <p class="section-subtitle reveal reveal-delay-2">The foundation is partially built. Key infrastructure is in production. The critical gap is the confirmation layer — the piece that creates the data asset.</p>
+
+    <table class="gap-table reveal reveal-delay-3">
+      <thead>
+        <tr><th>Capability</th><th>Status</th><th>Gap</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Multi-agent service V2</td>
+          <td><span class="status done">Production</span></td>
+          <td>Extend for shift start conversation</td>
+        </tr>
+        <tr>
+          <td>Employee Assistant LLM pipeline</td>
+          <td><span class="status done">Production</span></td>
+          <td>Reuse for supervisor-facing NLU</td>
+        </tr>
+        <tr>
+          <td>NCNS + Attendance agents</td>
+          <td><span class="status done">Code complete</span></td>
+          <td>Extend for confirmation + follow-up</td>
+        </tr>
+        <tr>
+          <td>MCP + OAuth 2.1</td>
+          <td><span class="status done">Production</span></td>
+          <td>Leverage existing infrastructure</td>
+        </tr>
+        <tr>
+          <td>Notification pipeline</td>
+          <td><span class="status progress">Working</span></td>
+          <td>Re-enable with accurate data</td>
+        </tr>
+        <tr>
+          <td>Shift assignment sync</td>
+          <td><span class="status progress">In progress</span></td>
+          <td>P0 blocker — active engineering priority</td>
+        </tr>
+        <tr>
+          <td>TEDS (canonical data)</td>
+          <td><span class="status progress">In development</span></td>
+          <td>Foundation for all data — new confirmation schema needed</td>
+        </tr>
+        <tr>
+          <td>Agent-composed shift summary</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>Critical — the entry point for the entire experience</td>
+        </tr>
+        <tr>
+          <td>Supervisor confirmation via conversation</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>Critical — the piece that creates the data asset</td>
+        </tr>
+        <tr>
+          <td>Coverage orchestration</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>Simple SMS blast for MVP — ranked recs in Stage 2</td>
+        </tr>
+        <tr>
+          <td>Points calculation engine</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>Separate track — strongest customer demand signal</td>
+        </tr>
+        <tr>
+          <td>LLM-powered SMS conversation</td>
+          <td><span class="status progress">In progress</span></td>
+          <td>Extends Employee Assistant LLM pipeline to supervisor-facing interactions</td>
+        </tr>
+        <tr>
+          <td>Supervisor shift digest (SMS)</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>≤480-char end-of-shift summary delivered via SMS — the "data flows up" payoff</td>
+        </tr>
+        <tr>
+          <td>HR daily digest (email)</td>
+          <td><span class="status not-built">Not built</span></td>
+          <td>Cross-shift rollup with confirmation quality metrics, delivered to HR via email</td>
+        </tr>
+        <tr>
+          <td>RCS Business Messaging</td>
+          <td><span class="status deferred">Future consideration</span></td>
+          <td>SMS-first with LLM intent parsing chosen over RCS — reassess when market coverage improves</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <p><strong>Supervisor Attendance Control Surface</strong> · Product Vision · February 2026</p>
+  <p style="margin-top:8px">TeamSense · "We're Going To Make A Great Team."</p>
+</footer>
+
+<!-- ═══════════ JS ═══════════ -->
+<script>
+// ── Scroll reveal ──
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => observer.observe(el));
+
+// ── Nav active state ──
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav-links a');
+const navBar = document.getElementById('topnav');
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const st = window.scrollY;
+  navBar.classList.toggle('hidden', st > lastScroll && st > 200);
+  lastScroll = st;
+  let current = '';
+  sections.forEach(s => { if (st >= s.offsetTop - 200) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+});
+
+// ── Journey stage selector ──
+function setStage(n) {
+  document.querySelectorAll('.stage-card').forEach(c => {
+    const s = parseInt(c.dataset.stage);
+    c.classList.remove('active', 'completed');
+    if (s === n) c.classList.add('active');
+    else if (s < n) c.classList.add('completed');
+  });
+  document.querySelectorAll('.stage-detail').forEach(d => d.classList.remove('active'));
+  document.getElementById('stage-' + n).classList.add('active');
+  const fill = ((n - 1) / 3) * 100;
+  document.getElementById('journeyFill').style.width = fill + '%';
+}
+// Auto-cycle through stages
+let autoStage = 1;
+const autoCycle = setInterval(() => {
+  autoStage = autoStage >= 4 ? 1 : autoStage + 1;
+  setStage(autoStage);
+}, 5000);
+document.querySelectorAll('.stage-card').forEach(c => {
+  c.addEventListener('click', () => clearInterval(autoCycle));
+});
+</script>
+</body>
+</html>
