@@ -260,6 +260,18 @@ footer strong{color:var(--gold)}
       <div class="hero-stat"><div class="num">3</div><div class="label">Personas served</div></div>
       <div class="hero-stat"><div class="num">Q2 '26</div><div class="label">MVP target</div></div>
     </div>
+
+    <div class="reveal reveal-delay-4" style="display:flex;gap:12px;margin-top:40px;flex-wrap:wrap">
+      <a href="https://www.notion.so/Vision-Supervisor-Attendance-Control-Surface-3066d2dbf270813ab054dedba69ab290" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:24px;color:var(--white);text-decoration:none;font-size:.85rem;font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='var(--gold)'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.borderColor='rgba(255,255,255,.2)'">
+        <span style="font-size:1rem">📄</span> Vision Doc
+      </a>
+      <a href="https://www.notion.so/PRD-Availability-Truth-and-Coverage-MVP-3096d2dbf27081a39623f044e9a19f2b" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:24px;color:var(--white);text-decoration:none;font-size:.85rem;font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='var(--mint)'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.borderColor='rgba(255,255,255,.2)'">
+        <span style="font-size:1rem">📋</span> MVP PRD
+      </a>
+      <a href="https://alvaro-j-soto.github.io/SCS-mvp/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(246,183,37,.15);border:1px solid rgba(246,183,37,.35);border-radius:24px;color:var(--gold);text-decoration:none;font-size:.85rem;font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(246,183,37,.25)'" onmouseout="this.style.background='rgba(246,183,37,.15)'">
+        <span style="font-size:1rem">📱</span> Try the MVP Prototype →
+      </a>
+    </div>
   </div>
   <div class="scroll-hint">Scroll to explore ↓</div>
 </section>
@@ -422,7 +434,7 @@ footer strong{color:var(--gold)}
         <div>
           <h4>What Sal experiences</h4>
           <h3>An AI conversation, not a dashboard</h3>
-          <p>Receives an AI-composed SMS shift summary with individual employee names at shift start. The agent adapts the message based on what's happening — a clean shift reads differently from a shift with 3 NCNS. Sal replies in natural language to confirm, correct, or ask questions. When confirming a gap, Sal tells the agent to find coverage or says they'll handle it internally.</p>
+          <p>Receives an AI-composed SMS shift summary with individual employee names at shift start. The agent adapts the message based on what's happening — a clean shift reads differently from a shift with 3 NCNS. Sal replies in natural language to confirm or correct the <em>classification and consequences</em> of each exception — not the attendance fact itself, but whether it's "tardy, points apply" or "excused, no points." When confirming a gap, the agent asks how Sal wants to handle coverage — moving someone on-site (the most common path) or texting the available list for external help.</p>
           <p style="margin-top:12px;font-weight:600;color:var(--teal)">Total interaction: ~2 minutes.</p>
         </div>
         <div>
@@ -628,7 +640,7 @@ footer strong{color:var(--gold)}
       </div>
       <div class="flow-arrow">↓</div>
       <div class="flow-row">
-        <div class="flow-node supervisor">Supervisor Conversation<small>Reviews summary · Confirms or corrects · Triggers coverage or adapts</small></div>
+        <div class="flow-node supervisor">Supervisor Conversation<small>Reviews summary · Confirms classification &amp; consequences · On-site rebalance or external outreach</small></div>
       </div>
       <div class="flow-arrow">↓</div>
       <div class="flow-row">
@@ -638,7 +650,7 @@ footer strong{color:var(--gold)}
       <div class="flow-branch">
         <div class="flow-node source">Operational Awareness<small>Shift summary, conversation</small></div>
         <div class="flow-node agent" style="font-size:.82rem">Digest Surface<small>Supervisor shift digest (SMS) · HR daily digest (email)</small></div>
-        <div class="flow-node source">Coverage Orchestration<small>Outreach, recommendations</small></div>
+        <div class="flow-node source">Coverage Orchestration<small>On-site rebalancing, external outreach, recommendations</small></div>
         <div class="flow-node source">Attendance Accountability<small>Points, self-service, audit</small></div>
       </div>
     </div>
@@ -761,7 +773,7 @@ footer strong{color:var(--gold)}
         <div class="roadmap-dot"></div>
         <div class="roadmap-time">Q2 2026</div>
         <div class="roadmap-name">Stage 1: Shift Start Confirmation (MVP)</div>
-        <div class="roadmap-desc">SMS shift start with names, AI-powered confirmation conversation, simple coverage trigger, adaptation logging, supervisor shift digest (SMS), and HR daily digest (email).</div>
+        <div class="roadmap-desc">SMS shift start with names, AI-powered confirmation of exception classifications and consequences, dual-path coverage support (on-site rebalancing + external outreach), adaptation logging, supervisor shift digest with points alerts (SMS), and HR daily digest (email).</div>
         <div class="roadmap-gate"><strong>Gate:</strong> ≥80% engagement · ≥85% trust · ≥70% auto-confirm</div>
       </div>
       <div class="roadmap-item next">
@@ -855,7 +867,7 @@ footer strong{color:var(--gold)}
         <tr>
           <td>Coverage orchestration</td>
           <td><span class="status not-built">Not built</span></td>
-          <td>Simple SMS blast for MVP — ranked recs in Stage 2</td>
+          <td>Dual-path: on-site rebalancing capture + external SMS outreach for MVP — ranked recs in Stage 2</td>
         </tr>
         <tr>
           <td>Points calculation engine</td>
